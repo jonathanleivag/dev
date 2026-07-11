@@ -86,7 +86,19 @@ if command -v gh &>/dev/null; then
 else
   warn "gh no encontrado. Instalando..."
   brew install gh
-  echo "  Instalado. Corre 'gh auth login' para autenticarte con tu cuenta de GitHub."
+fi
+
+log "Verificando autenticación de gh"
+if gh auth status &>/dev/null; then
+  echo "  Ya autenticado con GitHub ($(gh auth status 2>&1 | grep 'Logged in' | head -1 | xargs))"
+else
+  warn "No hay sesión activa de GitHub CLI."
+  read -r -p "  ¿Quieres autenticarte ahora con 'gh auth login'? (y/n) " respuesta_gh
+  if [ "$respuesta_gh" = "y" ] || [ "$respuesta_gh" = "Y" ]; then
+    gh auth login
+  else
+    warn "Se omite. Corre 'gh auth login' manualmente cuando quieras conectar tu cuenta."
+  fi
 fi
 
 # ---------- 2. nvm (Node Version Manager) ----------

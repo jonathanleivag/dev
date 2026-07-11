@@ -116,9 +116,9 @@ Abrir una terminal nueva para confirmar que el mensaje ya no aparece al iniciar 
 
 ### 3. `zsh: command not found: gh`
 
-**Causa:** GitHub CLI no estaba instalado (ya corregido en el script — ahora se instala junto con git).
+**Causa:** GitHub CLI no estaba instalado (ya corregido en el script — ahora se instala junto con git, y el script te pregunta si quieres correr `gh auth login` en el momento).
 
-**Instalar manualmente si hace falta:**
+**Instalar/autenticar manualmente si hace falta:**
 
 ```bash
 brew install gh
