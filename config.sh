@@ -333,10 +333,15 @@ else
 fi
 
 # Limpiar línea rota de una versión anterior del script (usaba brew, ruta inexistente)
+# No se usa `sed -i` porque falla si $ZSHRC es un symlink (ej. dotfiles gestionados
+# aparte, como ~/.zshrc -> ~/.gemini/.zshrc): "in-place editing only works for
+# regular files". En vez de eso, se reescribe vía archivo temporal + redirección,
+# que sigue el symlink y preserva el archivo real al que apunta.
 if grep -qF "brew)/share/fzf-tab/fzf-tab.plugin.zsh" "$ZSHRC" 2>/dev/null; then
   warn "Eliminando línea rota de fzf-tab de una instalación anterior en $ZSHRC"
-  sed -i '' '/share\/fzf-tab\/fzf-tab.plugin.zsh/d' "$ZSHRC" 2>/dev/null || \
-    sed -i '/share\/fzf-tab\/fzf-tab.plugin.zsh/d' "$ZSHRC"
+  grep -v '/share/fzf-tab/fzf-tab.plugin.zsh' "$ZSHRC" > "$ZSHRC.tmp"
+  cat "$ZSHRC.tmp" > "$ZSHRC"
+  rm -f "$ZSHRC.tmp"
 fi
 
 # fzf-tab debe cargarse DESPUÉS de compinit y ANTES de autosuggestions/syntax-highlighting
@@ -545,7 +550,9 @@ if ! command -v go &>/dev/null; then
   warn "Go no está instalado. Instalando go vía brew..."
   brew install go
 fi
-go install github.com/kopoli/vi-mongo@latest || warn "vi-mongo falló al instalar, revisa el repo por cambios: https://github.com/kopoli/vi-mongo"
+# `go install` deja los binarios en ~/go/bin, que no está en el PATH por defecto
+append_once 'export PATH="$HOME/go/bin:$PATH"' "$ZSHRC"
+go install github.com/kopecmaciej/vi-mongo@latest || warn "vi-mongo falló al instalar, revisa el repo por cambios: https://github.com/kopecmaciej/vi-mongo"
 
 log "Instalando mongosh (respaldo oficial de MongoDB)"
 brew install mongosh

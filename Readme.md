@@ -351,6 +351,32 @@ Si tu `starship.toml` ya existía antes de este cambio, el script detecta que fa
 
 ---
 
+### 8. `go install github.com/kopoli/vi-mongo@latest`: `remote: Repository not found`
+
+**Causa:** el script apuntaba al dueño de repo equivocado. El dueño real de `vi-mongo` es `kopecmaciej`, no `kopoli` — `github.com/kopoli/vi-mongo` nunca existió.
+
+**Ya corregido en el script:** `setup-terminal-stack.sh` ahora instala desde `github.com/kopecmaciej/vi-mongo@latest`.
+
+**Además, se detectó y corrigió un problema relacionado:** `go install` deja los binarios en `~/go/bin`, que no estaba en el `PATH` — el binario se instalaba pero el shell no lo encontraba. El script ahora agrega `export PATH="$HOME/go/bin:$PATH"` a `~/.zshrc` (vía `append_once`, así que no duplica la línea si ya está).
+
+**Arreglar manualmente si hace falta:**
+
+```bash
+go install github.com/kopecmaciej/vi-mongo@latest
+echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+---
+
+### 9. El script se caía con `sed: ~/.zshrc: in-place editing only works for regular files`
+
+**Causa:** si `~/.zshrc` es un symlink (por ejemplo, hacia un repo de dotfiles propio, patrón común si respaldas tu config con git), la limpieza de la línea rota de fzf-tab usaba `sed -i` directo sobre `$ZSHRC`. `sed -i` en macOS se niega a editar en el lugar cuando el destino es un symlink — y como el script corre con `set -euo pipefail`, ese error mataba la ejecución completa ahí mismo.
+
+**Ya corregido en el script:** en vez de `sed -i`, ahora reescribe vía archivo temporal + redirección (`grep -v ... "$ZSHRC" > "$ZSHRC.tmp" && cat "$ZSHRC.tmp" > "$ZSHRC"`), lo que sigue el symlink y escribe en el archivo real al que apunta, sin romper el symlink ni fallar.
+
+---
+
 ## Repo en GitHub
 
 Este repo (`terminal-stack`) ya está subido a tu cuenta de GitHub. Para clonarlo en un Mac nuevo:
