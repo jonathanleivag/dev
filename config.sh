@@ -418,6 +418,36 @@ EOF
   echo "  (typescript, vue, astro, tailwind, json, prettier, eslint — Mason los instalará al abrir nvim por primera vez)"
 fi
 
+log "Configurando dashboard de bienvenida (header personalizado)"
+DASHBOARD_FILE="$NVIM_CONFIG/lua/plugins/dashboard.lua"
+if [ -f "$DASHBOARD_FILE" ]; then
+  warn "Ya existe $DASHBOARD_FILE — no se sobreescribe para no perder tus ajustes."
+else
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+  cat > "$DASHBOARD_FILE" <<'EOF'
+-- Header personalizado del dashboard de inicio (snacks.nvim)
+-- Generado por setup-terminal-stack.sh
+return {
+  {
+    "snacks.nvim",
+    opts = {
+      dashboard = {
+        preset = {
+          header = [[
+    _               _   _              _     _
+ _ | |___ _ _  __ _| |_| |_  __ _ _ _ | |___(_)_ ____ _ __ _
+| || / _ \ ' \/ _` |  _| ' \/ _` | ' \| / -_) \ V / _` / _` |
+ \__/\___/_||_\__,_|\__|_||_\__,_|_||_|_\___|_|\_/\__,_\__, |
+                                                       |___/ ]],
+        },
+      },
+    },
+  },
+}
+EOF
+  echo "  Dashboard personalizado creado en $DASHBOARD_FILE"
+fi
+
 # ---------- 12. tmux (opcional, comentado por defecto) ----------
 
 # Descomenta si en algún momento trabajas mucho por SSH remoto:
@@ -436,6 +466,7 @@ echo "  - Docker + lazydocker"
 echo "  - lazysql (MySQL/PostgreSQL)"
 echo "  - vi-mongo + mongosh (MongoDB)"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
+echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."

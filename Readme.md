@@ -26,17 +26,17 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 
 ## Qué instala
 
-| Categoría          | Herramientas                                                                     |
-| ------------------ | -------------------------------------------------------------------------------- |
-| Base               | Homebrew, git, gh (GitHub CLI), nvm + Node LTS                                   |
-| Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting |
-| Prompt             | Starship (git branch/status, node, duración de comandos)                         |
-| Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                  |
-| Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                              |
-| Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                      |
-| Bases relacionales | lazysql (MySQL + PostgreSQL)                                                     |
-| MongoDB            | vi-mongo, mongosh                                                                |
-| Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind)       |
+| Categoría          | Herramientas                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------- |
+| Base               | Homebrew, git, gh (GitHub CLI), nvm + Node LTS                                                       |
+| Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                     |
+| Prompt             | Starship (git branch/status, node, duración de comandos)                                             |
+| Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                                      |
+| Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                  |
+| Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                          |
+| Bases relacionales | lazysql (MySQL + PostgreSQL)                                                                         |
+| MongoDB            | vi-mongo, mongosh                                                                                    |
+| Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado) |
 
 Nada de esto borra o reemplaza tus apps gráficas actuales — todo corre en paralelo.
 
@@ -105,6 +105,16 @@ return {
 React, Next.js y Nest.js no necesitan extras propios — ya quedan cubiertos por `lang.typescript` (JSX/TSX y decoradores incluidos).
 
 Tras editar, reabre `nvim` — Lazy sincroniza los nuevos imports solo. Si no arranca automático: `:Lazy sync`.
+
+### Dashboard de bienvenida personalizado
+
+La pantalla de inicio de LazyVim (antes mostraba "LAZYVIM" en ASCII art) ahora muestra el nombre `Jonathanleivag`. Configurado en:
+
+```bash
+~/.config/nvim/lua/plugins/dashboard.lua
+```
+
+Usa el plugin `snacks.nvim` (el que trae LazyVim para el dashboard), sobreescribiendo `opts.dashboard.preset.header` con el ASCII art. Si quieres cambiarlo por otro texto o estilo, genera uno nuevo con `figlet` (fuentes: `figlet -l` para listarlas) y reemplaza el contenido entre `[[ ]]` en ese archivo.
 
 ## Repo de tu config de Neovim
 
