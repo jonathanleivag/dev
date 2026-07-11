@@ -31,7 +31,7 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 | Base               | Homebrew, git (identidad por carpeta: personal/trabajo), gh (GitHub CLI), nvm + Node LTS + pnpm + yarn |
 | Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                       |
 | Prompt             | Starship (git branch/status, node, duración de comandos, equipo actual en vez de cuenta de gcloud)     |
-| CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`)                                                   |
+| CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`), lazygit (`gg`)                                    |
 | Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                                        |
 | Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
 | Asistentes de IA   | Claude Code, Codex CLI, Antigravity CLI (todos vía Homebrew cask)                                       |
@@ -54,6 +54,9 @@ El script agrega estos alias a tu `.zshrc`:
 | `ll`  | —         | `eza -la --icons --group-directories-first`            |
 | `lt`  | —         | `eza --tree --icons --level=2`                         |
 | `cd`  | `cd`      | `z` (zoxide — salto inteligente por frecuencia de uso) |
+| `e`   | —         | `exit`                                                 |
+| `vi`  | `vi`      | `nvim`                                                 |
+| `gg`  | —         | `lazygit`                                              |
 
 `zoxide` aprende de tus `cd` con el tiempo: después de visitar una carpeta unas cuantas veces, `z nombre-parcial` te lleva ahí sin necesidad de la ruta completa.
 

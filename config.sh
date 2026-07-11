@@ -161,6 +161,14 @@ else
   fi
 fi
 
+log "Verificando lazygit"
+if brew list lazygit &>/dev/null; then
+  echo "  lazygit OK, ya instalado"
+else
+  warn "lazygit no encontrado. Instalando..."
+  brew install lazygit
+fi
+
 # ---------- 2. nvm (Node Version Manager) ----------
 
 log "Verificando nvm"
@@ -491,6 +499,9 @@ append_once 'alias ls="eza --icons --group-directories-first"' "$ZSHRC"
 append_once 'alias ll="eza -la --icons --group-directories-first"' "$ZSHRC"
 append_once 'alias lt="eza --tree --icons --level=2"' "$ZSHRC"
 append_once 'alias cd="z"' "$ZSHRC"
+append_once 'alias e="exit"' "$ZSHRC"
+append_once 'alias vi="nvim"' "$ZSHRC"
+append_once 'alias gg="lazygit"' "$ZSHRC"
 
 # ---------- 8. Kubernetes ----------
 
