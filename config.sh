@@ -3,7 +3,7 @@
 # setup-terminal-stack.sh
 #
 # Instalación reproducible del stack de terminal:
-# Warp/Ghostty (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab,
+# Warp/Ghostty (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
 # zoxide/bat/eza + git config + pnpm/yarn + kubectl/k9s + Docker/lazydocker +
 # lazysql + vi-mongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
@@ -315,14 +315,24 @@ append_once "FPATH=$(brew --prefix)/share/zsh-completions:\$FPATH" "$ZSHRC"
 append_once "autoload -Uz compinit && compinit" "$ZSHRC"
 
 log "Verificando fzf-tab"
-if brew list fzf-tab &>/dev/null; then
-  echo "  fzf-tab OK, ya instalado"
+FZF_TAB_DIR="$HOME/.zsh-plugins/fzf-tab"
+if [ -d "$FZF_TAB_DIR" ]; then
+  echo "  fzf-tab OK, ya instalado en $FZF_TAB_DIR"
 else
-  warn "fzf-tab no encontrado. Instalando..."
-  brew install fzf-tab
+  warn "fzf-tab no encontrado. Clonando desde GitHub..."
+  mkdir -p "$HOME/.zsh-plugins"
+  git clone --depth=1 https://github.com/Aloxaf/fzf-tab "$FZF_TAB_DIR"
 fi
+
+# Limpiar línea rota de una versión anterior del script (usaba brew, ruta inexistente)
+if grep -qF "brew)/share/fzf-tab/fzf-tab.plugin.zsh" "$ZSHRC" 2>/dev/null; then
+  warn "Eliminando línea rota de fzf-tab de una instalación anterior en $ZSHRC"
+  sed -i '' '/share\/fzf-tab\/fzf-tab.plugin.zsh/d' "$ZSHRC" 2>/dev/null || \
+    sed -i '/share\/fzf-tab\/fzf-tab.plugin.zsh/d' "$ZSHRC"
+fi
+
 # fzf-tab debe cargarse DESPUÉS de compinit y ANTES de autosuggestions/syntax-highlighting
-append_once "source $(brew --prefix)/share/fzf-tab/fzf-tab.plugin.zsh" "$ZSHRC"
+append_once "source $FZF_TAB_DIR/fzf-tab.plugin.zsh" "$ZSHRC"
 
 log "Verificando zsh-autosuggestions"
 if brew list zsh-autosuggestions &>/dev/null; then
