@@ -26,19 +26,19 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 
 ## Qué instala
 
-| Categoría          | Herramientas                                                                                         |
-| ------------------ | ---------------------------------------------------------------------------------------------------- |
-| Base               | Homebrew, git (+ user.name/email), gh (GitHub CLI), nvm + Node LTS + pnpm + yarn                     |
-| Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                     |
-| Prompt             | Starship (git branch/status, node, duración de comandos)                                             |
-| CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`)                                                 |
-| Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                                      |
-| Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                           |
-| Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                  |
-| Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                          |
-| Bases relacionales | lazysql (MySQL + PostgreSQL)                                                                         |
-| MongoDB            | vi-mongo, mongosh                                                                                    |
-| Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado) |
+| Categoría          | Herramientas                                                                                           |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| Base               | Homebrew, git (identidad por carpeta: personal/trabajo), gh (GitHub CLI), nvm + Node LTS + pnpm + yarn |
+| Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                       |
+| Prompt             | Starship (git branch/status, node, duración de comandos)                                               |
+| CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`)                                                   |
+| Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                                        |
+| Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
+| Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                    |
+| Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                            |
+| Bases relacionales | lazysql (MySQL + PostgreSQL)                                                                           |
+| MongoDB            | vi-mongo, mongosh                                                                                      |
+| Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado)   |
 
 Nada de esto borra o reemplaza tus apps gráficas actuales — todo corre en paralelo.
 
@@ -165,15 +165,41 @@ git clone <url-de-tu-repo> ~/.config/nvim
 
 ## Troubleshooting — errores ya resueltos en esta instalación
 
-### 0. git commits con nombre/email genérico
+### 0. Identidad de git: personal vs. trabajo
 
-**Causa:** `user.name`/`user.email` no estaban configurados globalmente. El script ahora los detecta y, si faltan, te los pide interactivamente la primera vez que corre.
+Como manejas proyectos personales y de trabajo (Movatec) en carpetas separadas, el script configura **dos identidades automáticas por carpeta**, en vez de un solo `user.name`/`user.email` global:
 
-**Configurar manualmente si hace falta:**
+- **Personal (default):** aplica a cualquier repo fuera de la carpeta de trabajo → configurado directamente en `~/.gitconfig`.
+- **Trabajo:** aplica solo dentro de `~/Development/Movatec/` (o la ruta que hayas indicado) → vive en un archivo separado, `~/.gitconfig-work`, cargado automáticamente vía `includeIf "gitdir:..."`.
+
+**La primera vez que corres el script**, te pregunta:
+
+1. Carpeta de proyectos personales (default sugerido: `~/Development/jonathanleivag`)
+2. Carpeta de proyectos de trabajo (default sugerido: `~/Development/Movatec`)
+3. Nombre y email para el perfil personal
+4. Nombre y email para el perfil de trabajo
+
+**Verificar que quedó bien**, parado dentro de un repo de cada carpeta:
 
 ```bash
-git config --global user.name "Tu Nombre"
-git config --global user.email "tu@email.com"
+cd ~/Development/jonathanleivag/algun-proyecto && git config user.name && git config user.email
+cd ~/Development/Movatec/algun-proyecto && git config user.name && git config user.email
+```
+
+Cada uno debe mostrar la identidad correspondiente.
+
+**Ver la config resultante:**
+
+```bash
+cat ~/.gitconfig
+cat ~/.gitconfig-work
+```
+
+**Si agregas una nueva carpeta de trabajo más adelante** (otro cliente, otro repo fuera de `Movatec`), agrega un bloque similar a mano en `~/.gitconfig`:
+
+```
+[includeIf "gitdir:~/Development/OtraCarpeta/"]
+  path = ~/.gitconfig-work
 ```
 
 ### 1. Ghostty: `theme "catppuccin-mocha" not found`

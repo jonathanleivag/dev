@@ -81,22 +81,62 @@ else
   echo "  git OK ($(git --version))"
 fi
 
-log "Verificando git user.name / user.email"
+log "Configurando identidad de git por carpeta (personal vs. trabajo)"
 GIT_NAME="$(git config --global user.name || true)"
 GIT_EMAIL="$(git config --global user.email || true)"
-if [ -n "$GIT_NAME" ] && [ -n "$GIT_EMAIL" ]; then
-  echo "  Configurado: $GIT_NAME <$GIT_EMAIL>"
+
+if [ -n "$GIT_NAME" ] && [ -n "$GIT_EMAIL" ] && [ -f "$HOME/.gitconfig-work" ]; then
+  echo "  Identidad personal (default): $GIT_NAME <$GIT_EMAIL>"
+  echo "  Identidad de trabajo: ya configurada en ~/.gitconfig-work"
 else
-  warn "git user.name y/o user.email no configurados globalmente."
+  warn "Configurando identidad por primera vez."
+
+  read -r -p "  Carpeta de proyectos personales [$HOME/Development/jonathanleivag]: " personal_dir
+  personal_dir="${personal_dir:-$HOME/Development/jonathanleivag}"
+
+  read -r -p "  Carpeta de proyectos de trabajo [$HOME/Development/Movatec]: " work_dir
+  work_dir="${work_dir:-$HOME/Development/Movatec}"
+
+  # Asegurar slash final (requisito de git para includeIf "gitdir:")
+  [[ "$personal_dir" != */ ]] && personal_dir="$personal_dir/"
+  [[ "$work_dir" != */ ]] && work_dir="$work_dir/"
+
   if [ -z "$GIT_NAME" ]; then
-    read -r -p "  Tu nombre para git commits: " input_name
-    [ -n "$input_name" ] && git config --global user.name "$input_name"
+    read -r -p "  Tu nombre (perfil PERSONAL): " personal_name
+  else
+    personal_name="$GIT_NAME"
   fi
   if [ -z "$GIT_EMAIL" ]; then
-    read -r -p "  Tu email para git commits: " input_email
-    [ -n "$input_email" ] && git config --global user.email "$input_email"
+    read -r -p "  Tu email (perfil PERSONAL): " personal_email
+  else
+    personal_email="$GIT_EMAIL"
   fi
-  echo "  Configurado: $(git config --global user.name) <$(git config --global user.email)>"
+
+  read -r -p "  Tu nombre (perfil TRABAJO): " work_name
+  read -r -p "  Tu email (perfil TRABAJO): " work_email
+
+  # Identidad por defecto = personal (aplica a cualquier carpeta que no sea la de trabajo)
+  git config --global user.name "$personal_name"
+  git config --global user.email "$personal_email"
+
+  # Config separada para trabajo
+  cat > "$HOME/.gitconfig-work" <<EOF
+[user]
+  name = $work_name
+  email = $work_email
+EOF
+
+  # includeIf: cuando el repo esté dentro de la carpeta de trabajo, usa .gitconfig-work
+  if ! grep -qF "gitdir:$work_dir" "$HOME/.gitconfig" 2>/dev/null; then
+    cat >> "$HOME/.gitconfig" <<EOF
+
+[includeIf "gitdir:$work_dir"]
+  path = ~/.gitconfig-work
+EOF
+  fi
+
+  echo "  Personal (default): $personal_name <$personal_email> — aplica fuera de $work_dir"
+  echo "  Trabajo: $work_name <$work_email> — aplica dentro de $work_dir"
 fi
 
 log "Verificando GitHub CLI (gh)"
@@ -606,7 +646,7 @@ fi
 # ---------- Fin ----------
 
 log "Listo. Resumen de lo instalado:"
-echo "  - gh (GitHub CLI) + git user.name/email configurados"
+echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm + yarn (vía corepack)"
 echo "  - Ghostty (terminal alterno, opcional junto a Warp) + config visual + fuente Nerd Font"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
