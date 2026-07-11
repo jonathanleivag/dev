@@ -36,7 +36,7 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 | Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                      |
 | Bases relacionales | lazysql (MySQL + PostgreSQL)                                                     |
 | MongoDB            | vi-mongo, mongosh                                                                |
-| Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue)                      |
+| Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind)       |
 
 Nada de esto borra o reemplaza tus apps gráficas actuales — todo corre en paralelo.
 
@@ -48,7 +48,7 @@ Nada de esto borra o reemplaza tus apps gráficas actuales — todo corre en par
 nvim
 ```
 
-La primera vez instala automáticamente todos los plugins de LazyVim (pantalla de progreso) y, con **Mason**, descarga los LSPs de los extras habilitados (typescript-language-server, vue-language-server, eslint-lsp, prettier). Puede tardar 1-2 minutos — espera a que termine antes de cerrar.
+La primera vez instala automáticamente todos los plugins de LazyVim (pantalla de progreso) y, con **Mason**, descarga los LSPs de los extras habilitados (typescript-language-server, vue-language-server, astro-language-server, tailwindcss-language-server, eslint-lsp, prettier). Puede tardar 1-2 minutos — espera a que termine antes de cerrar.
 
 **Paso 2 — Verificar que los LSPs quedaron instalados**
 
@@ -58,7 +58,7 @@ Dentro de nvim:
 :Mason
 ```
 
-Debes ver `typescript-language-server`, `vue-language-server`, `eslint-lsp`, `prettier`, etc. con ícono verde (instalados).
+Debes ver `typescript-language-server`, `vue-language-server`, `astro-language-server`, `tailwindcss-language-server`, `eslint-lsp`, `prettier`, etc. con ícono verde (instalados).
 
 **Paso 3 — Atajos básicos para probar en un proyecto real**
 
@@ -79,6 +79,32 @@ nvim .
 > El `<leader>` por defecto en LazyVim es la barra espaciadora.
 
 Nota: los plugins de git integrados (`gitsigns`, incluido por defecto) usan tu `~/.gitconfig` global — no requieren configuración adicional en LazyVim.
+
+### Extras agregados manualmente (Astro + Tailwind)
+
+Como tu `~/.config/nvim` ya existía cuando agregamos estos frameworks, el script no los agregó solo (por diseño, para no sobreescribir tus ajustes). Se agregaron a mano en:
+
+```bash
+nvim ~/.config/nvim/lua/plugins/extras.lua
+```
+
+Contenido final del archivo:
+
+```lua
+return {
+  { import = "lazyvim.plugins.extras.lang.typescript" },
+  { import = "lazyvim.plugins.extras.lang.vue" },
+  { import = "lazyvim.plugins.extras.lang.astro" },
+  { import = "lazyvim.plugins.extras.lang.tailwind" },
+  { import = "lazyvim.plugins.extras.lang.json" },
+  { import = "lazyvim.plugins.extras.formatting.prettier" },
+  { import = "lazyvim.plugins.extras.linting.eslint" },
+}
+```
+
+React, Next.js y Nest.js no necesitan extras propios — ya quedan cubiertos por `lang.typescript` (JSX/TSX y decoradores incluidos).
+
+Tras editar, reabre `nvim` — Lazy sincroniza los nuevos imports solo. Si no arranca automático: `:Lazy sync`.
 
 ## Repo de tu config de Neovim
 

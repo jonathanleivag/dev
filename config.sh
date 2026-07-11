@@ -6,7 +6,7 @@
 # Warp/Ghostty (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
 # kubectl/k9s + Docker/lazydocker + lazysql + vi-mongo +
-# LazyVim (+ extras typescript/vue/json/prettier/eslint)
+# LazyVim (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)
 #
 # Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
 # nada existente. Es idempotente: puedes correrlo varias veces.
@@ -401,19 +401,21 @@ if [ -f "$EXTRAS_FILE" ]; then
 else
   mkdir -p "$NVIM_CONFIG/lua/plugins"
   cat > "$EXTRAS_FILE" <<'EOF'
--- Extras de LazyVim habilitados para el stack JS/TS/Vue
+-- Extras de LazyVim habilitados para el stack Vue/React/Astro/Next/Nest (TS)
 -- Generado por setup-terminal-stack.sh
 -- Mason instalará automáticamente los LSPs/formatters la primera vez que abras nvim
 return {
   { import = "lazyvim.plugins.extras.lang.typescript" },
   { import = "lazyvim.plugins.extras.lang.vue" },
+  { import = "lazyvim.plugins.extras.lang.astro" },
+  { import = "lazyvim.plugins.extras.lang.tailwind" },
   { import = "lazyvim.plugins.extras.lang.json" },
   { import = "lazyvim.plugins.extras.formatting.prettier" },
   { import = "lazyvim.plugins.extras.linting.eslint" },
 }
 EOF
   echo "  Extras creados en $EXTRAS_FILE"
-  echo "  (typescript, vue, json, prettier, eslint — Mason los instalará al abrir nvim por primera vez)"
+  echo "  (typescript, vue, astro, tailwind, json, prettier, eslint — Mason los instalará al abrir nvim por primera vez)"
 fi
 
 # ---------- 12. tmux (opcional, comentado por defecto) ----------
@@ -433,7 +435,7 @@ echo "  - kubectl + k9s + kubectx/kubens + stern (Kubernetes)"
 echo "  - Docker + lazydocker"
 echo "  - lazysql (MySQL/PostgreSQL)"
 echo "  - vi-mongo + mongosh (MongoDB)"
-echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/json/prettier/eslint)"
+echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
