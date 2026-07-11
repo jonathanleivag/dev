@@ -386,8 +386,39 @@ append_once 'eval "$(starship init zsh)"' "$ZSHRC"
 
 STARSHIP_CONFIG_DIR="$HOME/.config"
 STARSHIP_CONFIG_FILE="$STARSHIP_CONFIG_DIR/starship.toml"
+
+# Identificador de equipo (usuario - modelo de Mac + chip/procesador), cacheado
+# en un archivo porque `system_profiler` es lento para correr en cada prompt.
+STARSHIP_MACHINE_FILE="$HOME/.config/starship/machine.txt"
+mkdir -p "$(dirname "$STARSHIP_MACHINE_FILE")"
+MAC_MODEL_NAME="$(system_profiler SPHardwareDataType 2>/dev/null | awk -F': ' '/Model Name/{print $2; exit}')"
+MAC_CHIP="$(system_profiler SPHardwareDataType 2>/dev/null | awk -F': ' '/^ *Chip/{print $2; exit}')"
+if [ -z "$MAC_CHIP" ]; then
+  # Macs Intel no tienen línea "Chip", sino "Processor Name"
+  MAC_CHIP="$(system_profiler SPHardwareDataType 2>/dev/null | awk -F': ' '/Processor Name/{print $2; exit}')"
+fi
+echo "jonathanleivag - ${MAC_MODEL_NAME} ${MAC_CHIP}" > "$STARSHIP_MACHINE_FILE"
+
 if [ -f "$STARSHIP_CONFIG_FILE" ]; then
   warn "Ya existe $STARSHIP_CONFIG_FILE — no se sobreescribe."
+  if ! grep -q '\[custom.machine\]' "$STARSHIP_CONFIG_FILE"; then
+    cat >> "$STARSHIP_CONFIG_FILE" <<'EOF'
+
+# Oculta la cuenta de gcloud (símbolo ☁️  por defecto) y muestra en su lugar
+# el equipo actual, cacheado en ~/.config/starship/machine.txt
+[gcloud]
+disabled = true
+
+[custom.machine]
+command = "cat ~/.config/starship/machine.txt 2>/dev/null"
+when = true
+symbol = "</> "
+format = "on [$symbol$output]($style) "
+EOF
+    echo "  + segmento de equipo agregado a $STARSHIP_CONFIG_FILE"
+  else
+    echo "  OK, segmento de equipo ya presente en $STARSHIP_CONFIG_FILE"
+  fi
 else
   mkdir -p "$STARSHIP_CONFIG_DIR"
   cat > "$STARSHIP_CONFIG_FILE" <<'EOF'
@@ -406,6 +437,17 @@ symbol = " "
 [cmd_duration]
 min_time = 500
 format = "took [$duration]($style) "
+
+# Oculta la cuenta de gcloud (símbolo ☁️  por defecto) y muestra en su lugar
+# el equipo actual, cacheado en ~/.config/starship/machine.txt
+[gcloud]
+disabled = true
+
+[custom.machine]
+command = "cat ~/.config/starship/machine.txt 2>/dev/null"
+when = true
+symbol = "</> "
+format = "on [$symbol$output]($style) "
 EOF
   echo "  Config creada en $STARSHIP_CONFIG_FILE"
 fi

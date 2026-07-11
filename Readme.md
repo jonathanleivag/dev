@@ -30,7 +30,7 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 | ------------------ | ------------------------------------------------------------------------------------------------------ |
 | Base               | Homebrew, git (identidad por carpeta: personal/trabajo), gh (GitHub CLI), nvm + Node LTS + pnpm + yarn |
 | Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                       |
-| Prompt             | Starship (git branch/status, node, duración de comandos)                                               |
+| Prompt             | Starship (git branch/status, node, duración de comandos, equipo actual en vez de cuenta de gcloud)     |
 | CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`)                                                   |
 | Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                                        |
 | Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
@@ -322,6 +322,32 @@ Esto deja `Cmd+V` explícitamente vinculado a pegar texto — **no habilita pega
 - Usar Warp o iTerm2 puntualmente para sesiones de Claude Code donde necesites pegar imágenes.
 - Guardar el screenshot como archivo y pasar la ruta directo en el prompt de Claude Code, en vez de pegar.
 - Seguir el PR `#12030` en GitHub para saber cuándo se resuelve de raíz.
+
+---
+
+### 7. Starship mostraba la cuenta de gcloud (`☁️  tu-email@gmail.com`) en el prompt
+
+**Causa:** el módulo `[gcloud]` de Starship está habilitado por defecto y detecta la config de `~/.config/gcloud/` (queda ahí aunque el binario `gcloud` no esté instalado). Como esa config tenía una cuenta personal asociada, el prompt exponía el email en cada terminal — incluso dentro de proyectos de Movatec.
+
+**Ya corregido en el script:** `setup-terminal-stack.sh` ahora:
+
+1. Genera `~/.config/starship/machine.txt` con el modelo de Mac y su chip/procesador (vía `system_profiler SPHardwareDataType`, con fallback a `Processor Name` en Macs Intel). Se cachea en archivo porque `system_profiler` es lento para correr en cada render del prompt.
+2. Agrega a `~/.config/starship.toml`:
+
+```toml
+[gcloud]
+disabled = true
+
+[custom.machine]
+command = "cat ~/.config/starship/machine.txt 2>/dev/null"
+when = true
+symbol = "</> "
+format = "on [$symbol$output]($style) "
+```
+
+Si tu `starship.toml` ya existía antes de este cambio, el script detecta que falta `[custom.machine]` y agrega el bloque al final del archivo (no lo sobreescribe).
+
+**Resultado:** el prompt pasa de `on ☁️  tu-email@gmail.com` a `on </> jonathanleivag - MacBook Pro Apple M1 Pro`.
 
 ---
 
