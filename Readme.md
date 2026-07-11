@@ -287,6 +287,44 @@ Reabre `nvim` y el aviso no debería volver a aparecer.
 
 ---
 
+### 5. `.zshrc:source: no such file or directory: /opt/homebrew/share/fzf-tab/fzf-tab.plugin.zsh`
+
+**Causa:** `fzf-tab` no es una fórmula real de Homebrew (error mío al asumirlo en una versión anterior del script) — por eso `brew install fzf-tab` no dejaba el archivo en esa ruta.
+
+**Ya corregido en el script:** ahora clona `fzf-tab` directo de GitHub a `~/.zsh-plugins/fzf-tab`, y limpia automáticamente la línea rota si viene de una instalación anterior.
+
+**Arreglar manualmente si hace falta:**
+
+```bash
+git clone https://github.com/Aloxaf/fzf-tab ~/.zsh-plugins/fzf-tab
+sed -i '' 's|source /opt/homebrew/share/fzf-tab/fzf-tab.plugin.zsh|source ~/.zsh-plugins/fzf-tab/fzf-tab.plugin.zsh|' ~/.zshrc
+source ~/.zshrc
+```
+
+---
+
+### 6. Ghostty no permite pegar imágenes (Cmd+V) en Claude Code
+
+**Limitación confirmada, no un error de configuración.** Se investigó el código fuente oficial de Ghostty (tag `v1.3.1`, la versión estable más reciente al momento de escribir esto) y **no tiene implementado el pegado de imágenes desde el portapapeles** hacia el programa corriendo dentro (Claude Code, en este caso). Solo soporta texto y rutas de archivo — una imagen "cruda" (ej. un screenshot copiado con `Cmd+Ctrl+Shift+4`) no tiene forma de llegar al programa vía `Cmd+V`.
+
+Hay un PR abierto en el repo de Ghostty (`#12030`, protocolo de portapapeles de Kitty) que podría resolver esto en el futuro, pero al momento de escribir esto sigue sin fusionarse.
+
+**El script agrega este keybind** a `~/.config/ghostty/config`:
+
+```
+keybind = super+v=paste_from_clipboard
+```
+
+Esto deja `Cmd+V` explícitamente vinculado a pegar texto — **no habilita pegado de imágenes**, solo hace explícito el comportamiento de paste normal.
+
+**Workarounds mientras Ghostty no lo soporte:**
+
+- Usar Warp o iTerm2 puntualmente para sesiones de Claude Code donde necesites pegar imágenes.
+- Guardar el screenshot como archivo y pasar la ruta directo en el prompt de Claude Code, en vez de pegar.
+- Seguir el PR `#12030` en GitHub para saber cuándo se resuelve de raíz.
+
+---
+
 ## Repo en GitHub
 
 Este repo (`terminal-stack`) ya está subido a tu cuenta de GitHub. Para clonarlo en un Mac nuevo:

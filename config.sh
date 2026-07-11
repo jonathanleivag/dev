@@ -275,6 +275,10 @@ window-padding-x = 10
 window-padding-y = 10
 cursor-style = block
 mouse-hide-while-typing = true
+
+# Keybind explícito de paste (texto). NO habilita pegado de imágenes —
+# Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
+keybind = super+v=paste_from_clipboard
 EOF
 else
   cat > "$GHOSTTY_CONFIG_FILE" <<'EOF'
@@ -287,6 +291,10 @@ window-padding-x = 10
 window-padding-y = 10
 cursor-style = block
 mouse-hide-while-typing = true
+
+# Keybind explícito de paste (texto). NO habilita pegado de imágenes —
+# Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
+keybind = super+v=paste_from_clipboard
 EOF
   echo "  Config creada en $GHOSTTY_CONFIG_FILE"
 fi
