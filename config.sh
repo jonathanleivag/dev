@@ -563,6 +563,16 @@ EOF
   echo "  Dashboard personalizado creado en $DASHBOARD_FILE"
 fi
 
+log "Desactivando chequeo de orden de imports de LazyVim (falso positivo con extras.lua manual)"
+OPTIONS_FILE="$NVIM_CONFIG/lua/config/options.lua"
+if [ -f "$OPTIONS_FILE" ]; then
+  append_once "vim.g.lazyvim_check_order = false" "$OPTIONS_FILE"
+else
+  mkdir -p "$NVIM_CONFIG/lua/config"
+  echo "vim.g.lazyvim_check_order = false" > "$OPTIONS_FILE"
+  echo "  Creado $OPTIONS_FILE"
+fi
+
 # ---------- 13. tmux ----------
 
 log "Verificando tmux"

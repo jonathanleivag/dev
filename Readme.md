@@ -271,6 +271,22 @@ gh auth login
 
 ---
 
+### 4. LazyVim: `The order of your lazy.nvim imports is incorrect`
+
+**Causa:** es solo una **advertencia**, no un error — los plugins se instalan igual. LazyVim valida el orden esperado de imports (`lazyvim.plugins` → `lazyvim.plugins.extras.*` → tus propios `plugins`), y como agregamos `extras.lua` manualmente (patrón oficial y recomendado por LazyVim), el chequeo a veces da falso positivo.
+
+**Ya corregido en el script:** agrega `vim.g.lazyvim_check_order = false` en `~/.config/nvim/lua/config/options.lua`.
+
+**Aplicar manualmente si hace falta:**
+
+```bash
+echo "vim.g.lazyvim_check_order = false" >> ~/.config/nvim/lua/config/options.lua
+```
+
+Reabre `nvim` y el aviso no debería volver a aparecer.
+
+---
+
 ## Repo en GitHub
 
 Este repo (`terminal-stack`) ya está subido a tu cuenta de GitHub. Para clonarlo en un Mac nuevo:
