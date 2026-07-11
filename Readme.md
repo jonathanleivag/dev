@@ -34,6 +34,7 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 | CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`)                                                   |
 | Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                                        |
 | Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
+| Asistentes de IA   | Claude Code, Codex CLI, Antigravity CLI (todos vía Homebrew cask)                                       |
 | Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                    |
 | Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                            |
 | Bases relacionales | lazysql (MySQL + PostgreSQL)                                                                           |

@@ -7,7 +7,8 @@
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
 # zoxide/bat/eza + git config + pnpm/yarn + kubectl/k9s + Docker/lazydocker +
 # lazysql + vi-mongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
-# prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins)
+# prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
+# Claude Code + Codex CLI + Antigravity CLI
 #
 # Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
 # nada existente. Es idempotente: puedes correrlo varias veces.
@@ -720,6 +721,32 @@ else
   echo "  TPM instalado. Con tmux abierto, presiona 'prefix + I' (Ctrl-a luego I) para instalar los plugins."
 fi
 
+# ---------- 14. Asistentes de código con IA (CLIs) ----------
+
+log "Verificando Claude Code"
+if brew list --cask claude-code &>/dev/null; then
+  echo "  Claude Code OK, ya instalado"
+else
+  warn "Claude Code no encontrado. Instalando..."
+  brew install --cask claude-code
+fi
+
+log "Verificando Codex CLI"
+if brew list --cask codex &>/dev/null; then
+  echo "  Codex CLI OK, ya instalado"
+else
+  warn "Codex CLI no encontrado. Instalando..."
+  brew install --cask codex
+fi
+
+log "Verificando Antigravity CLI"
+if brew list --cask antigravity-cli &>/dev/null; then
+  echo "  Antigravity CLI OK, ya instalado"
+else
+  warn "Antigravity CLI no encontrado. Instalando..."
+  brew install --cask antigravity-cli
+fi
+
 # ---------- Fin ----------
 
 log "Listo. Resumen de lo instalado:"
@@ -736,6 +763,7 @@ echo "  - vi-mongo + mongosh (MongoDB)"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
+echo "  - Claude Code + Codex CLI + Antigravity CLI (asistentes de código con IA)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
