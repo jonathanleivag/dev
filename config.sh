@@ -5,8 +5,9 @@
 # Instalación reproducible del stack de terminal:
 # Warp/Ghostty (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
-# kubectl/k9s + Docker/lazydocker + lazysql + vi-mongo +
-# LazyVim (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)
+# zoxide/bat/eza + git config + pnpm/yarn + kubectl/k9s + Docker/lazydocker +
+# lazysql + vi-mongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
+# prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins)
 #
 # Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
 # nada existente. Es idempotente: puedes correrlo varias veces.
@@ -80,6 +81,24 @@ else
   echo "  git OK ($(git --version))"
 fi
 
+log "Verificando git user.name / user.email"
+GIT_NAME="$(git config --global user.name || true)"
+GIT_EMAIL="$(git config --global user.email || true)"
+if [ -n "$GIT_NAME" ] && [ -n "$GIT_EMAIL" ]; then
+  echo "  Configurado: $GIT_NAME <$GIT_EMAIL>"
+else
+  warn "git user.name y/o user.email no configurados globalmente."
+  if [ -z "$GIT_NAME" ]; then
+    read -r -p "  Tu nombre para git commits: " input_name
+    [ -n "$input_name" ] && git config --global user.name "$input_name"
+  fi
+  if [ -z "$GIT_EMAIL" ]; then
+    read -r -p "  Tu email para git commits: " input_email
+    [ -n "$input_email" ] && git config --global user.email "$input_email"
+  fi
+  echo "  Configurado: $(git config --global user.name) <$(git config --global user.email)>"
+fi
+
 log "Verificando GitHub CLI (gh)"
 if command -v gh &>/dev/null; then
   echo "  gh OK ($(gh --version | head -1))"
@@ -134,6 +153,28 @@ if command -v nvm &>/dev/null && [ -z "$(nvm ls --no-colors 2>/dev/null | grep -
   log "No hay versiones de Node instaladas vía nvm, instalando LTS"
   nvm install --lts
   nvm alias default lts/*
+fi
+
+log "Verificando pnpm y yarn (vía corepack, incluido con Node)"
+if command -v corepack &>/dev/null; then
+  corepack enable 2>/dev/null || warn "corepack enable falló, revisa permisos o corre manualmente"
+
+  if command -v pnpm &>/dev/null; then
+    echo "  pnpm OK ($(pnpm --version))"
+  else
+    warn "Activando pnpm vía corepack..."
+    corepack prepare pnpm@latest --activate
+  fi
+
+  if command -v yarn &>/dev/null; then
+    echo "  yarn OK ($(yarn --version))"
+  else
+    warn "Activando yarn vía corepack..."
+    corepack prepare yarn@stable --activate
+  fi
+else
+  warn "corepack no encontrado (viene con Node 16.10+). Instalando pnpm/yarn como paquetes globales de npm en su lugar..."
+  npm install -g pnpm yarn
 fi
 
 # ---------- 3. zsh ----------
@@ -311,7 +352,41 @@ EOF
   echo "  Config creada en $STARSHIP_CONFIG_FILE"
 fi
 
-# ---------- 7. Kubernetes ----------
+# ---------- 7. Utilidades modernas de CLI (zoxide, bat, eza) ----------
+
+log "Verificando zoxide (cd inteligente)"
+if brew list zoxide &>/dev/null; then
+  echo "  zoxide OK, ya instalado"
+else
+  warn "zoxide no encontrado. Instalando..."
+  brew install zoxide
+fi
+append_once 'eval "$(zoxide init zsh)"' "$ZSHRC"
+
+log "Verificando bat (cat con resaltado de sintaxis)"
+if brew list bat &>/dev/null; then
+  echo "  bat OK, ya instalado"
+else
+  warn "bat no encontrado. Instalando..."
+  brew install bat
+fi
+
+log "Verificando eza (ls moderno)"
+if brew list eza &>/dev/null; then
+  echo "  eza OK, ya instalado"
+else
+  warn "eza no encontrado. Instalando..."
+  brew install eza
+fi
+
+log "Configurando alias (cat, ls, cd -> bat, eza, zoxide)"
+append_once 'alias cat="bat"' "$ZSHRC"
+append_once 'alias ls="eza --icons --group-directories-first"' "$ZSHRC"
+append_once 'alias ll="eza -la --icons --group-directories-first"' "$ZSHRC"
+append_once 'alias lt="eza --tree --icons --level=2"' "$ZSHRC"
+append_once 'alias cd="z"' "$ZSHRC"
+
+# ---------- 8. Kubernetes ----------
 
 log "Verificando kubectl"
 if command -v kubectl &>/dev/null; then
@@ -333,7 +408,7 @@ fi
 log "Instalando k9s (+ kubectx/kubens, stern)"
 brew install k9s kubectx stern
 
-# ---------- 8. Docker ----------
+# ---------- 9. Docker ----------
 
 log "Verificando Docker"
 if command -v docker &>/dev/null; then
@@ -358,12 +433,12 @@ fi
 log "Instalando lazydocker"
 brew install lazydocker
 
-# ---------- 9. Bases de datos relacionales ----------
+# ---------- 10. Bases de datos relacionales ----------
 
 log "Instalando lazysql (MySQL + PostgreSQL)"
 brew install lazysql
 
-# ---------- 10. MongoDB ----------
+# ---------- 11. MongoDB ----------
 
 log "Instalando vi-mongo (requiere Go)"
 if ! command -v go &>/dev/null; then
@@ -375,7 +450,7 @@ go install github.com/kopoli/vi-mongo@latest || warn "vi-mongo falló al instala
 log "Instalando mongosh (respaldo oficial de MongoDB)"
 brew install mongosh
 
-# ---------- 11. Editor: Neovim + LazyVim ----------
+# ---------- 12. Editor: Neovim + LazyVim ----------
 
 log "Instalando Neovim"
 brew install neovim ripgrep fd  # ripgrep y fd son dependencias comunes de LazyVim
@@ -448,28 +523,106 @@ EOF
   echo "  Dashboard personalizado creado en $DASHBOARD_FILE"
 fi
 
-# ---------- 12. tmux (opcional, comentado por defecto) ----------
+# ---------- 13. tmux ----------
 
-# Descomenta si en algún momento trabajas mucho por SSH remoto:
-# log "Instalando tmux"
-# brew install tmux tmux-resurrect
+log "Verificando tmux"
+if brew list tmux &>/dev/null; then
+  echo "  tmux OK, ya instalado"
+else
+  warn "tmux no encontrado. Instalando..."
+  brew install tmux
+fi
+
+log "Configurando tmux (~/.tmux.conf)"
+TMUX_CONF="$HOME/.tmux.conf"
+if [ -f "$TMUX_CONF" ]; then
+  warn "Ya existe $TMUX_CONF — no se sobreescribe para no perder tus ajustes."
+else
+  cat > "$TMUX_CONF" <<'EOF'
+# ~/.tmux.conf — generado por setup-terminal-stack.sh
+
+# Prefix más cómodo: Ctrl-a en vez de Ctrl-b
+unbind C-b
+set -g prefix C-a
+bind C-a send-prefix
+
+# Mouse: click para cambiar de panel, arrastrar para redimensionar, scroll para history
+set -g mouse on
+
+# Splits más intuitivos (mantienen el directorio actual)
+unbind '"'
+unbind %
+bind | split-window -h -c "#{pane_current_path}"
+bind - split-window -v -c "#{pane_current_path}"
+
+# Nuevas ventanas también respetan el directorio actual
+bind c new-window -c "#{pane_current_path}"
+
+# Recargar config con prefix + r
+bind r source-file ~/.tmux.conf \; display "Config recargada"
+
+# Navegación de paneles estilo vim (h j k l)
+bind h select-pane -L
+bind j select-pane -D
+bind k select-pane -U
+bind l select-pane -R
+
+# Empezar a contar ventanas/paneles desde 1, no 0
+set -g base-index 1
+setw -g pane-base-index 1
+
+# Historial de scroll más largo
+set -g history-limit 10000
+
+# Colores de 256/truecolor (para que Neovim y themes se vean bien)
+set -g default-terminal "tmux-256color"
+set -ag terminal-overrides ",xterm-256color:RGB"
+
+# ---- Plugins (vía TPM) ----
+set -g @plugin 'tmux-plugins/tpm'
+set -g @plugin 'tmux-plugins/tmux-sensible'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+
+# tmux-continuum: autoguardado de sesión cada 15 min + restaurar al abrir tmux
+set -g @continuum-restore 'on'
+set -g @continuum-save-interval '15'
+
+# Inicializar TPM (debe ir al final del archivo)
+run '~/.tmux/plugins/tpm/tpm'
+EOF
+  echo "  Config creada en $TMUX_CONF"
+fi
+
+log "Instalando TPM (Tmux Plugin Manager)"
+TPM_DIR="$HOME/.tmux/plugins/tpm"
+if [ -d "$TPM_DIR" ]; then
+  echo "  TPM OK, ya instalado"
+else
+  git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
+  echo "  TPM instalado. Con tmux abierto, presiona 'prefix + I' (Ctrl-a luego I) para instalar los plugins."
+fi
 
 # ---------- Fin ----------
 
 log "Listo. Resumen de lo instalado:"
-echo "  - gh (GitHub CLI)"
+echo "  - gh (GitHub CLI) + git user.name/email configurados"
+echo "  - nvm + Node LTS + pnpm + yarn (vía corepack)"
 echo "  - Ghostty (terminal alterno, opcional junto a Warp) + config visual + fuente Nerd Font"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
+echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
 echo "  - kubectl + k9s + kubectx/kubens + stern (Kubernetes)"
 echo "  - Docker + lazydocker"
 echo "  - lazysql (MySQL/PostgreSQL)"
 echo "  - vi-mongo + mongosh (MongoDB)"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
+echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
+echo "Y abre 'tmux', presiona prefix+I (Ctrl-a, I) para instalar los plugins de TPM."
 echo ""
 echo "Recuerda: si versionas $NVIM_CONFIG en tu propio repo de GitHub, en tu próximo Mac"
 echo "solo necesitas clonar tu fork en vez de LazyVim/starter, y luego correr este script"

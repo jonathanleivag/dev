@@ -28,10 +28,12 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 
 | Categoría          | Herramientas                                                                                         |
 | ------------------ | ---------------------------------------------------------------------------------------------------- |
-| Base               | Homebrew, git, gh (GitHub CLI), nvm + Node LTS                                                       |
+| Base               | Homebrew, git (+ user.name/email), gh (GitHub CLI), nvm + Node LTS + pnpm + yarn                     |
 | Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                     |
 | Prompt             | Starship (git branch/status, node, duración de comandos)                                             |
+| CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`)                                                 |
 | Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                                      |
+| Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                           |
 | Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                  |
 | Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                          |
 | Bases relacionales | lazysql (MySQL + PostgreSQL)                                                                         |
@@ -39,6 +41,33 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 | Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado) |
 
 Nada de esto borra o reemplaza tus apps gráficas actuales — todo corre en paralelo.
+
+## Alias de CLI moderna
+
+El script agrega estos alias a tu `.zshrc`:
+
+| Alias | Reemplaza | Con                                                    |
+| ----- | --------- | ------------------------------------------------------ |
+| `cat` | `cat`     | `bat` (resaltado de sintaxis, números de línea)        |
+| `ls`  | `ls`      | `eza --icons --group-directories-first`                |
+| `ll`  | —         | `eza -la --icons --group-directories-first`            |
+| `lt`  | —         | `eza --tree --icons --level=2`                         |
+| `cd`  | `cd`      | `z` (zoxide — salto inteligente por frecuencia de uso) |
+
+`zoxide` aprende de tus `cd` con el tiempo: después de visitar una carpeta unas cuantas veces, `z nombre-parcial` te lleva ahí sin necesidad de la ruta completa.
+
+## tmux
+
+El script instala tmux con una config lista para usar (`~/.tmux.conf`) y **TPM** (Tmux Plugin Manager):
+
+- **Prefix:** `Ctrl-a` (en vez del default `Ctrl-b`)
+- **Splits:** `prefix + |` (vertical), `prefix + -` (horizontal) — abren en el directorio actual
+- **Navegación entre paneles:** `prefix + h/j/k/l` (estilo vim)
+- **Mouse:** activado (clic para cambiar de panel, arrastrar para redimensionar, scroll para history)
+- **Recargar config:** `prefix + r`
+- **Plugins incluidos:** `tmux-sensible`, `tmux-resurrect` (guardar/restaurar sesiones), `tmux-continuum` (autoguardado cada 15 min + restaurar sesión al abrir tmux)
+
+**Primera vez:** abre `tmux` y presiona `prefix + I` (Ctrl-a, luego `I` mayúscula) para que TPM instale los plugins.
 
 ## Primer uso de LazyVim
 
@@ -135,6 +164,17 @@ git clone <url-de-tu-repo> ~/.config/nvim
 ---
 
 ## Troubleshooting — errores ya resueltos en esta instalación
+
+### 0. git commits con nombre/email genérico
+
+**Causa:** `user.name`/`user.email` no estaban configurados globalmente. El script ahora los detecta y, si faltan, te los pide interactivamente la primera vez que corre.
+
+**Configurar manualmente si hace falta:**
+
+```bash
+git config --global user.name "Tu Nombre"
+git config --global user.email "tu@email.com"
+```
 
 ### 1. Ghostty: `theme "catppuccin-mocha" not found`
 
