@@ -1,0 +1,431 @@
+#!/usr/bin/env bash
+#
+# setup-terminal-stack.sh
+#
+# Instalación reproducible del stack de terminal:
+# Warp/Ghostty (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab,
+# autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
+# kubectl/k9s + Docker/lazydocker + lazysql + vi-mongo +
+# LazyVim (+ extras typescript/vue/json/prettier/eslint)
+#
+# Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
+# nada existente. Es idempotente: puedes correrlo varias veces.
+#
+# Uso:
+#   chmod +x setup-terminal-stack.sh
+#   ./setup-terminal-stack.sh
+#
+set -euo pipefail
+
+ZSHRC="$HOME/.zshrc"
+NVIM_CONFIG="$HOME/.config/nvim"
+
+# ---------- helpers ----------
+
+log() {
+  echo -e "\n\033[1;32m==> $1\033[0m"
+}
+
+warn() {
+  echo -e "\033[1;33m!! $1\033[0m"
+}
+
+append_once() {
+  # append_once "línea a agregar" "$ZSHRC"
+  local line="$1"
+  local file="$2"
+  if ! grep -qF "$line" "$file" 2>/dev/null; then
+    echo "$line" >> "$file"
+    echo "  + agregado a $file"
+  else
+    echo "  = ya estaba en $file, se omite"
+  fi
+}
+
+# ---------- 0. Homebrew ----------
+
+log "Verificando Homebrew"
+if ! command -v brew &>/dev/null; then
+  warn "Homebrew no encontrado. Instalando..."
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  # Cargar brew en esta misma sesión del script (ruta distinta según arquitectura)
+  if [ -x "/opt/homebrew/bin/brew" ]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"   # Apple Silicon
+  elif [ -x "/usr/local/bin/brew" ]; then
+    eval "$(/usr/local/bin/brew shellenv)"      # Intel
+  else
+    echo "No se pudo localizar brew tras la instalación. Cierra y abre una terminal nueva y vuelve a correr este script."
+    exit 1
+  fi
+
+  # Dejarlo persistente para futuras sesiones de shell
+  touch "$ZSHRC"
+  if [ -x "/opt/homebrew/bin/brew" ]; then
+    append_once 'eval "$(/opt/homebrew/bin/brew shellenv)"' "$ZSHRC"
+  elif [ -x "/usr/local/bin/brew" ]; then
+    append_once 'eval "$(/usr/local/bin/brew shellenv)"' "$ZSHRC"
+  fi
+else
+  echo "  Homebrew OK ($(brew --version | head -1))"
+fi
+
+# ---------- 1. git ----------
+
+log "Verificando git"
+if ! command -v git &>/dev/null; then
+  warn "git no encontrado. Instalando Xcode Command Line Tools (incluye git)..."
+  xcode-select --install || warn "Si ya se está instalando o falló, revisa manualmente con: xcode-select --install"
+else
+  echo "  git OK ($(git --version))"
+fi
+
+log "Verificando GitHub CLI (gh)"
+if command -v gh &>/dev/null; then
+  echo "  gh OK ($(gh --version | head -1))"
+else
+  warn "gh no encontrado. Instalando..."
+  brew install gh
+  echo "  Instalado. Corre 'gh auth login' para autenticarte con tu cuenta de GitHub."
+fi
+
+# ---------- 2. nvm (Node Version Manager) ----------
+
+log "Verificando nvm"
+export NVM_DIR="$HOME/.nvm"
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+  # shellcheck disable=SC1091
+  source "$NVM_DIR/nvm.sh"
+fi
+
+if ! command -v nvm &>/dev/null; then
+  warn "nvm no encontrado. Instalando..."
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+
+  # Cargarlo en esta misma sesión del script
+  export NVM_DIR="$HOME/.nvm"
+  # shellcheck disable=SC1091
+  [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+
+  # Asegurar que quede en .zshrc para futuras sesiones (el instalador de nvm
+  # normalmente ya lo agrega, pero lo confirmamos por si acaso)
+  touch "$HOME/.zshrc"
+  append_once 'export NVM_DIR="$HOME/.nvm"' "$HOME/.zshrc"
+  append_once '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' "$HOME/.zshrc"
+  append_once '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' "$HOME/.zshrc"
+else
+  echo "  nvm OK ($(nvm --version))"
+fi
+
+# Instalar Node LTS si no hay ninguna versión de node instalada vía nvm
+if command -v nvm &>/dev/null && [ -z "$(nvm ls --no-colors 2>/dev/null | grep -v 'N/A')" ]; then
+  log "No hay versiones de Node instaladas vía nvm, instalando LTS"
+  nvm install --lts
+  nvm alias default lts/*
+fi
+
+# ---------- 3. zsh ----------
+
+log "Verificando zsh"
+if command -v zsh &>/dev/null; then
+  echo "  zsh OK ($(zsh --version))"
+else
+  warn "zsh no encontrado. Instalando..."
+  brew install zsh
+fi
+
+log "Verificando que zsh sea tu shell por defecto"
+if [ "$SHELL" != "$(command -v zsh)" ] && [ "$SHELL" != "/bin/zsh" ]; then
+  warn "Tu shell actual es '$SHELL', no zsh."
+  read -r -p "  ¿Quieres que este script lo cambie a zsh como default? (y/n) " respuesta
+  if [ "$respuesta" = "y" ] || [ "$respuesta" = "Y" ]; then
+    ZSH_PATH="$(command -v zsh)"
+    # chsh necesita que el shell esté listado en /etc/shells
+    if ! grep -qF "$ZSH_PATH" /etc/shells; then
+      echo "$ZSH_PATH" | sudo tee -a /etc/shells >/dev/null
+    fi
+    chsh -s "$ZSH_PATH"
+    echo "  Shell cambiado a $ZSH_PATH. Se aplicará al abrir una terminal nueva."
+  else
+    warn "Se omite el cambio de shell. El resto de la configuración (.zshrc) se deja lista de todas formas,"
+    warn "pero no tendrá efecto hasta que uses zsh como shell activo."
+  fi
+else
+  echo "  zsh ya es tu shell por defecto"
+fi
+
+# ---------- 4. Terminal emulator ----------
+
+log "Verificando Ghostty"
+if [ -d "/Applications/Ghostty.app" ] || brew list --cask ghostty &>/dev/null; then
+  echo "  Ghostty OK, ya instalado"
+else
+  warn "Ghostty no encontrado. Instalando..."
+  brew install --cask ghostty
+fi
+
+log "Configurando Ghostty (tema, fuente, transparencia)"
+GHOSTTY_CONFIG_DIR="$HOME/.config/ghostty"
+GHOSTTY_CONFIG_FILE="$GHOSTTY_CONFIG_DIR/config"
+mkdir -p "$GHOSTTY_CONFIG_DIR"
+
+if [ -f "$GHOSTTY_CONFIG_FILE" ]; then
+  warn "Ya existe $GHOSTTY_CONFIG_FILE — no se sobreescribe para no perder tus ajustes."
+  echo "  Config sugerida disponible en: $GHOSTTY_CONFIG_FILE.suggested"
+  cat > "$GHOSTTY_CONFIG_FILE.suggested" <<'EOF'
+# Config sugerida de Ghostty — copia lo que quieras a tu config real
+theme = "Catppuccin Mocha"
+font-family = "JetBrainsMono Nerd Font"
+font-size = 14
+background-opacity = 0.95
+window-padding-x = 10
+window-padding-y = 10
+cursor-style = block
+mouse-hide-while-typing = true
+EOF
+else
+  cat > "$GHOSTTY_CONFIG_FILE" <<'EOF'
+# Config inicial generada por setup-terminal-stack.sh
+theme = "Catppuccin Mocha"
+font-family = "JetBrainsMono Nerd Font"
+font-size = 14
+background-opacity = 0.95
+window-padding-x = 10
+window-padding-y = 10
+cursor-style = block
+mouse-hide-while-typing = true
+EOF
+  echo "  Config creada en $GHOSTTY_CONFIG_FILE"
+fi
+
+log "Verificando fuente JetBrainsMono Nerd Font (usada en la config de Ghostty)"
+if brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
+  echo "  Fuente OK, ya instalada"
+else
+  warn "Fuente no encontrada. Instalando..."
+  brew install --cask font-jetbrains-mono-nerd-font
+fi
+
+# ---------- 5. Shell: zsh plugins ----------
+
+touch "$ZSHRC"
+
+log "Verificando zsh-completions"
+if brew list zsh-completions &>/dev/null; then
+  echo "  zsh-completions OK, ya instalado"
+else
+  warn "zsh-completions no encontrado. Instalando..."
+  brew install zsh-completions
+fi
+# fpath debe agregarse ANTES de compinit
+append_once "FPATH=$(brew --prefix)/share/zsh-completions:\$FPATH" "$ZSHRC"
+append_once "autoload -Uz compinit && compinit" "$ZSHRC"
+
+log "Verificando fzf-tab"
+if brew list fzf-tab &>/dev/null; then
+  echo "  fzf-tab OK, ya instalado"
+else
+  warn "fzf-tab no encontrado. Instalando..."
+  brew install fzf-tab
+fi
+# fzf-tab debe cargarse DESPUÉS de compinit y ANTES de autosuggestions/syntax-highlighting
+append_once "source $(brew --prefix)/share/fzf-tab/fzf-tab.plugin.zsh" "$ZSHRC"
+
+log "Verificando zsh-autosuggestions"
+if brew list zsh-autosuggestions &>/dev/null; then
+  echo "  zsh-autosuggestions OK, ya instalado"
+else
+  warn "zsh-autosuggestions no encontrado. Instalando..."
+  brew install zsh-autosuggestions
+fi
+append_once "source $(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh" "$ZSHRC"
+
+log "Verificando fzf"
+if brew list fzf &>/dev/null; then
+  echo "  fzf OK, ya instalado"
+else
+  warn "fzf no encontrado. Instalando..."
+  brew install fzf
+fi
+# --key-bindings y --completion sin prompts interactivos, --no-update-rc porque lo manejamos manual
+"$(brew --prefix)"/opt/fzf/install --key-bindings --completion --no-update-rc
+append_once "[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh" "$ZSHRC"
+
+log "Verificando zsh-syntax-highlighting"
+if brew list zsh-syntax-highlighting &>/dev/null; then
+  echo "  zsh-syntax-highlighting OK, ya instalado"
+else
+  warn "zsh-syntax-highlighting no encontrado. Instalando..."
+  brew install zsh-syntax-highlighting
+fi
+# IMPORTANTE: syntax-highlighting debe ir al FINAL del .zshrc, siempre
+append_once "source $(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" "$ZSHRC"
+
+# ---------- 6. Starship (prompt) ----------
+
+log "Verificando Starship"
+if brew list starship &>/dev/null; then
+  echo "  Starship OK, ya instalado"
+else
+  warn "Starship no encontrado. Instalando..."
+  brew install starship
+fi
+# El init de starship debe ir al final del .zshrc (después de syntax-highlighting)
+append_once 'eval "$(starship init zsh)"' "$ZSHRC"
+
+STARSHIP_CONFIG_DIR="$HOME/.config"
+STARSHIP_CONFIG_FILE="$STARSHIP_CONFIG_DIR/starship.toml"
+if [ -f "$STARSHIP_CONFIG_FILE" ]; then
+  warn "Ya existe $STARSHIP_CONFIG_FILE — no se sobreescribe."
+else
+  mkdir -p "$STARSHIP_CONFIG_DIR"
+  cat > "$STARSHIP_CONFIG_FILE" <<'EOF'
+# Config inicial de Starship — muestra git branch/estado, node, y tiempo de ejecución
+add_newline = false
+
+[git_branch]
+symbol = " "
+
+[git_status]
+disabled = false
+
+[nodejs]
+symbol = " "
+
+[cmd_duration]
+min_time = 500
+format = "took [$duration]($style) "
+EOF
+  echo "  Config creada en $STARSHIP_CONFIG_FILE"
+fi
+
+# ---------- 7. Kubernetes ----------
+
+log "Verificando kubectl"
+if command -v kubectl &>/dev/null; then
+  echo "  kubectl OK ($(kubectl version --client --short 2>/dev/null || echo 'instalado'))"
+else
+  warn "kubectl no encontrado. Instalando..."
+  brew install kubectl
+fi
+
+log "Verificando contextos de kubeconfig"
+if kubectl config get-contexts &>/dev/null && [ -n "$(kubectl config get-contexts -o name 2>/dev/null)" ]; then
+  echo "  Contextos encontrados en ~/.kube/config, k9s podrá usarlos directamente"
+else
+  warn "No se encontraron contextos de Kubernetes configurados (~/.kube/config vacío o ausente)."
+  warn "k9s se instalará igual, pero necesitarás configurar tu kubeconfig antes de usarlo"
+  warn "(por ejemplo, exportando el config de tu proveedor cloud o copiándolo desde donde ya lo usas con Lens)."
+fi
+
+log "Instalando k9s (+ kubectx/kubens, stern)"
+brew install k9s kubectx stern
+
+# ---------- 8. Docker ----------
+
+log "Verificando Docker"
+if command -v docker &>/dev/null; then
+  echo "  Docker CLI OK ($(docker --version))"
+  if docker info &>/dev/null; then
+    echo "  Docker daemon corriendo OK"
+  else
+    warn "Docker está instalado pero el daemon no responde. Abre Docker Desktop (o inicia el daemon) antes de usar lazydocker."
+  fi
+else
+  warn "Docker no encontrado."
+  read -r -p "  ¿Quieres instalar Docker Desktop ahora? (y/n) " respuesta_docker
+  if [ "$respuesta_docker" = "y" ] || [ "$respuesta_docker" = "Y" ]; then
+    brew install --cask docker
+    warn "Docker Desktop se instaló pero necesita abrirse manualmente al menos una vez"
+    warn "(aceptar términos, dar permisos) antes de que lazydocker pueda usarlo."
+  else
+    warn "Se omite Docker. lazydocker se instalará igual, pero no funcionará hasta que tengas Docker corriendo."
+  fi
+fi
+
+log "Instalando lazydocker"
+brew install lazydocker
+
+# ---------- 9. Bases de datos relacionales ----------
+
+log "Instalando lazysql (MySQL + PostgreSQL)"
+brew install lazysql
+
+# ---------- 10. MongoDB ----------
+
+log "Instalando vi-mongo (requiere Go)"
+if ! command -v go &>/dev/null; then
+  warn "Go no está instalado. Instalando go vía brew..."
+  brew install go
+fi
+go install github.com/kopoli/vi-mongo@latest || warn "vi-mongo falló al instalar, revisa el repo por cambios: https://github.com/kopoli/vi-mongo"
+
+log "Instalando mongosh (respaldo oficial de MongoDB)"
+brew install mongosh
+
+# ---------- 11. Editor: Neovim + LazyVim ----------
+
+log "Instalando Neovim"
+brew install neovim ripgrep fd  # ripgrep y fd son dependencias comunes de LazyVim
+
+if [ -d "$NVIM_CONFIG" ]; then
+  warn "Ya existe $NVIM_CONFIG — no se sobreescribe. Si quieres reinstalar LazyVim desde cero:"
+  echo "    mv $NVIM_CONFIG $NVIM_CONFIG.bak"
+  echo "    git clone https://github.com/LazyVim/starter $NVIM_CONFIG"
+else
+  log "Clonando LazyVim starter"
+  git clone https://github.com/LazyVim/starter "$NVIM_CONFIG"
+  rm -rf "$NVIM_CONFIG/.git"
+  log "Inicializando repo propio para tu config de nvim (recomendado para versionarla)"
+  git -C "$NVIM_CONFIG" init -q
+  git -C "$NVIM_CONFIG" add -A
+  git -C "$NVIM_CONFIG" commit -q -m "LazyVim starter inicial"
+fi
+
+log "Habilitando extras de LazyVim para JS/TS/Vue"
+EXTRAS_FILE="$NVIM_CONFIG/lua/plugins/extras.lua"
+if [ -f "$EXTRAS_FILE" ]; then
+  warn "Ya existe $EXTRAS_FILE — no se sobreescribe para no perder tus ajustes."
+else
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+  cat > "$EXTRAS_FILE" <<'EOF'
+-- Extras de LazyVim habilitados para el stack JS/TS/Vue
+-- Generado por setup-terminal-stack.sh
+-- Mason instalará automáticamente los LSPs/formatters la primera vez que abras nvim
+return {
+  { import = "lazyvim.plugins.extras.lang.typescript" },
+  { import = "lazyvim.plugins.extras.lang.vue" },
+  { import = "lazyvim.plugins.extras.lang.json" },
+  { import = "lazyvim.plugins.extras.formatting.prettier" },
+  { import = "lazyvim.plugins.extras.linting.eslint" },
+}
+EOF
+  echo "  Extras creados en $EXTRAS_FILE"
+  echo "  (typescript, vue, json, prettier, eslint — Mason los instalará al abrir nvim por primera vez)"
+fi
+
+# ---------- 12. tmux (opcional, comentado por defecto) ----------
+
+# Descomenta si en algún momento trabajas mucho por SSH remoto:
+# log "Instalando tmux"
+# brew install tmux tmux-resurrect
+
+# ---------- Fin ----------
+
+log "Listo. Resumen de lo instalado:"
+echo "  - gh (GitHub CLI)"
+echo "  - Ghostty (terminal alterno, opcional junto a Warp) + config visual + fuente Nerd Font"
+echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
+echo "  - Starship (prompt con git/node/duración de comandos)"
+echo "  - kubectl + k9s + kubectx/kubens + stern (Kubernetes)"
+echo "  - Docker + lazydocker"
+echo "  - lazysql (MySQL/PostgreSQL)"
+echo "  - vi-mongo + mongosh (MongoDB)"
+echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/json/prettier/eslint)"
+echo ""
+echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
+echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
+echo ""
+echo "Recuerda: si versionas $NVIM_CONFIG en tu propio repo de GitHub, en tu próximo Mac"
+echo "solo necesitas clonar tu fork en vez de LazyVim/starter, y luego correr este script"
+echo "para el resto de las herramientas."
