@@ -38,7 +38,7 @@ Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de lo
 | Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                    |
 | Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                            |
 | Bases relacionales | lazysql (MySQL + PostgreSQL)                                                                           |
-| MongoDB            | vi-mongo, mongosh                                                                                      |
+| MongoDB            | vi-mongo, mongosh, conexiones nombradas (`mgo <nombre>`)                                               |
 | Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado)   |
 
 Nada de esto borra o reemplaza tus apps gráficas actuales — todo corre en paralelo.
@@ -59,6 +59,32 @@ El script agrega estos alias a tu `.zshrc`:
 | `gg`  | —         | `lazygit`                                              |
 
 `zoxide` aprende de tus `cd` con el tiempo: después de visitar una carpeta unas cuantas veces, `z nombre-parcial` te lleva ahí sin necesidad de la ruta completa.
+
+## Conexiones nombradas de MongoDB (`mgo`)
+
+Si trabajas con varias conexiones de MongoDB (distintos clientes/entornos), el script agrega una función `mgo` a tu `.zshrc` que lee conexiones nombradas desde `~/.config/mongo-connections.sh` y abre `mongosh` directo con la URI correspondiente.
+
+**Este archivo de conexiones NUNCA se sube a ningún repo** — vive únicamente en `~/.config/mongo-connections.sh`, fuera de `terminal-stack`, precisamente porque contiene credenciales. Si algún día armas tu propio backup de dotfiles (como el repo `antigravity-config`), no incluyas este archivo ahí sin cifrarlo.
+
+**Editar tus conexiones:**
+
+```bash
+nvim ~/.config/mongo-connections.sh
+```
+
+```bash
+declare -A MONGO_CONNECTIONS=(
+  [cliente-x]="mongodb+srv://usuario:password@cluster.mongodb.net/db"
+  [cliente-y]="mongodb://usuario:password@10.0.0.5:27017/db2"
+)
+```
+
+**Uso:**
+
+```bash
+mgo                # sin argumentos: lista las conexiones disponibles
+mgo cliente-x       # abre mongosh conectado a esa URI
+```
 
 ## tmux
 

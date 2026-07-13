@@ -569,6 +569,55 @@ go install github.com/kopecmaciej/vi-mongo@latest || warn "vi-mongo falló al in
 log "Instalando mongosh (respaldo oficial de MongoDB)"
 brew install mongosh
 
+log "Configurando conexiones nombradas de MongoDB (comando 'mgo')"
+MONGO_CONNECTIONS_FILE="$HOME/.config/mongo-connections.sh"
+if [ -f "$MONGO_CONNECTIONS_FILE" ]; then
+  echo "  OK, ya existe $MONGO_CONNECTIONS_FILE — no se sobreescribe."
+else
+  cat > "$MONGO_CONNECTIONS_FILE" <<'EOF'
+# Conexiones de MongoDB nombradas, usadas por la función `mgo` de .zshrc.
+# Este archivo NO se sube a ningún repo — solo vive en esta Mac.
+# Formato: [nombre]="uri completa de mongodb"
+
+declare -A MONGO_CONNECTIONS=(
+  [ejemplo-local]="mongodb://localhost:27017"
+  # [cliente-x]="mongodb+srv://usuario:password@cluster.mongodb.net/db"
+  # [cliente-y]="mongodb://usuario:password@10.0.0.5:27017/db2"
+)
+EOF
+  echo "  Config creada en $MONGO_CONNECTIONS_FILE (edítala para agregar tus conexiones reales)"
+fi
+
+if ! grep -qF 'mgo()' "$ZSHRC" 2>/dev/null; then
+  cat >> "$ZSHRC" <<'EOF'
+
+# Conexiones de MongoDB nombradas (ver ~/.config/mongo-connections.sh)
+[ -f ~/.config/mongo-connections.sh ] && source ~/.config/mongo-connections.sh
+
+mgo() {
+  if [ -z "$1" ]; then
+    echo "Uso: mgo <nombre>"
+    echo "Conexiones disponibles:"
+    for nombre in "${(@k)MONGO_CONNECTIONS}"; do
+      echo "  - $nombre"
+    done
+    return 1
+  fi
+
+  local uri="${MONGO_CONNECTIONS[$1]}"
+  if [ -z "$uri" ]; then
+    echo "No existe la conexión '$1'. Agrégala en ~/.config/mongo-connections.sh"
+    return 1
+  fi
+
+  mongosh "$uri"
+}
+EOF
+  echo "  + función mgo agregada a $ZSHRC"
+else
+  echo "  OK, función mgo ya presente en $ZSHRC"
+fi
+
 # ---------- 12. Editor: Neovim + LazyVim ----------
 
 log "Instalando Neovim"
@@ -770,7 +819,7 @@ echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
 echo "  - kubectl + k9s + kubectx/kubens + stern (Kubernetes)"
 echo "  - Docker + lazydocker"
 echo "  - lazysql (MySQL/PostgreSQL)"
-echo "  - vi-mongo + mongosh (MongoDB)"
+echo "  - vi-mongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
