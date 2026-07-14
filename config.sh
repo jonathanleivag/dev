@@ -571,6 +571,128 @@ fi
 log "Instalando k9s (+ kubectx/kubens, stern)"
 brew install k9s kubectx stern
 
+log "Configurando k9s (Skin Catppuccin Mocha y soporte para mouse)"
+K9S_CONFIG_DIR="$HOME/.config/k9s"
+mkdir -p "$K9S_CONFIG_DIR/skins"
+
+cat > "$K9S_CONFIG_DIR/config.yaml" <<'EOF'
+k9s:
+  refreshRate: 2
+  maxRequestsCol: 500
+  infoColor:
+    fg: lightskyblue
+  enableMouse: true
+  skin: catppuccin-mocha
+  headless: false
+  logoless: false
+  crumbsless: false
+  readOnly: false
+  noIcons: false
+  logger:
+    tail: 100
+    buffer: 5000
+    limit: 100
+    wrap: true
+    showTime: false
+  thresholds:
+    cpu:
+      critical: 90
+      warn: 70
+    memory:
+      critical: 90
+      warn: 70
+EOF
+
+cat > "$K9S_CONFIG_DIR/skins/catppuccin-mocha.yaml" <<'EOF'
+# Catppuccin Mocha Skin for K9s
+k9s:
+  body:
+    fg: "#cdd6f4"
+    bg: "#1e1e2e"
+    logoColor: "#cba6f7"
+  info:
+    fg: "#89b4fa"
+    sectionFg: "#a6e3a1"
+  dialog:
+    fg: "#cdd6f4"
+    bg: "#1e1e2e"
+    buttonFg: "#11111b"
+    buttonBg: "#cba6f7"
+    activeButtonFg: "#11111b"
+    activeButtonBg: "#a6e3a1"
+    maskBg: "#1e1e2e"
+  frame:
+    border:
+      fg: "#585b70"
+      focusFg: "#cba6f7"
+    menu:
+      fg: "#bac2de"
+      keyFg: "#f38ba8"
+      numFg: "#fab387"
+    crumbs:
+      fg: "#11111b"
+      bg: "#f5c2e7"
+      activeBg: "#cba6f7"
+    status:
+      newColor: "#89b4fa"
+      modifyColor: "#f9e2af"
+      deleteColor: "#f38ba8"
+      pendingColor: "#fab387"
+      errorColor: "#f38ba8"
+      highlightColor: "#a6e3a1"
+      killColor: "#f38ba8"
+      completedColor: "#bac2de"
+    title:
+      fg: "#89b4fa"
+      counterFg: "#cba6f7"
+      filterFg: "#f38ba8"
+  views:
+    charts:
+      bgColor: "#1e1e2e"
+      defaultDialColor: "#89b4fa"
+      defaultChartColor: "#89b4fa"
+      resourceColors:
+        cpu:
+          - "#89b4fa"
+          - "#f9e2af"
+          - "#f38ba8"
+        mem:
+          - "#89b4fa"
+          - "#f9e2af"
+          - "#f38ba8"
+    table:
+      fg: "#cdd6f4"
+      bg: "#1e1e2e"
+      cursorFg: "#11111b"
+      cursorBg: "#cba6f7"
+      cursorLineFg: "#cdd6f4"
+      cursorLineBg: "#313244"
+      markFg: "#a6e3a1"
+      markBg: "#1e1e2e"
+      header:
+        fg: "#f9e2af"
+        bg: "#1e1e2e"
+        sorterFg: "#cba6f7"
+    xray:
+      fg: "#cdd6f4"
+      bg: "#1e1e2e"
+      cursorFg: "#11111b"
+      cursorBg: "#cba6f7"
+      graphicColor: "#cba6f7"
+      showVisualizer: true
+    yaml:
+      keyColor: "#f38ba8"
+      valueColor: "#cdd6f4"
+      colonColor: "#bac2de"
+    logs:
+      fg: "#cdd6f4"
+      bg: "#1e1e2e"
+      indicator:
+        fg: "#cba6f7"
+        bg: "#1e1e2e"
+EOF
+echo "  Configuración y skin de k9s creados exitosamente."
+
 # ---------- 9. Docker ----------
 
 log "Verificando Docker"
