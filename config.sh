@@ -6,7 +6,7 @@
 # Warp/Ghostty (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
 # zoxide/bat/eza + git config + pnpm/yarn + kubectl/k9s + Docker/lazydocker +
-# lazysql + vi-mongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
+# lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
 # prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
 # Claude Code + Codex CLI + Antigravity CLI
 #
@@ -168,6 +168,44 @@ else
   warn "lazygit no encontrado. Instalando..."
   brew install lazygit
 fi
+
+log "Configurando lazygit (customCommands con IA)"
+LAZYGIT_CONFIG_DIR="$HOME/Library/Application Support/lazygit"
+mkdir -p "$LAZYGIT_CONFIG_DIR"
+cat > "$LAZYGIT_CONFIG_DIR/config.yml" <<'EOF'
+customCommands:
+  # --- SECCIÓN DE ARCHIVOS (Files Panel) ---
+  # Generar commit automático con IA para los cambios staged
+  - key: 'g'
+    command: 'git commit -m "$(git diff --cached | agy -p \"Analiza el diff de git y genera un mensaje de commit convencional corto, conciso y en una sola línea. Devuelve ÚNICAMENTE la línea del mensaje, sin explicaciones ni formato markdown.\")"'
+    context: 'files'
+    loadingText: 'Generando commit con IA (Antigravity)...'
+    subprocess: true
+
+  # Explicar los cambios del archivo seleccionado (staged y unstaged)
+  - key: 'x'
+    command: 'agy -p "Explica de forma concisa los cambios realizados en el archivo {{.SelectedFile.Name}}:\n\n$(git diff HEAD -- {{.SelectedFile.Name}})"'
+    context: 'files'
+    loadingText: 'Explicando cambios del archivo con IA...'
+    subprocess: true
+
+  # --- SECCIÓN DE COMMITS (Commits Panel) ---
+  # Explicar los cambios y propósito del commit seleccionado
+  - key: 'x'
+    command: 'agy -p "Explica qué hace este commit y resume los cambios principales de forma concisa y directa:\n\n$(git show {{.SelectedLocalCommit.Hash}})"'
+    context: 'commits'
+    loadingText: 'Analizando commit con IA...'
+    subprocess: true
+
+  # --- SECCIÓN DE RAMAS (Local Branches Panel) ---
+  # Resumir todos los cambios de la rama seleccionada en comparación con main
+  - key: 'x'
+    command: 'agy -p "Resume los cambios realizados en la rama local ''{{.SelectedLocalBranch.Name}}'' en comparación con la rama principal (main):\n\n$(git diff main...{{.SelectedLocalBranch.Name}})"'
+    context: 'localBranches'
+    loadingText: 'Resumiendo cambios de la rama con IA...'
+    subprocess: true
+EOF
+echo "  Config de lazygit creada/actualizada en $LAZYGIT_CONFIG_DIR/config.yml"
 
 # ---------- 2. nvm (Node Version Manager) ----------
 
@@ -502,6 +540,9 @@ append_once 'alias cd="z"' "$ZSHRC"
 append_once 'alias e="exit"' "$ZSHRC"
 append_once 'alias vi="nvim"' "$ZSHRC"
 append_once 'alias gg="lazygit"' "$ZSHRC"
+append_once 'alias lazymongo="~/go/bin/lazymongo"' "$ZSHRC"
+append_once 'alias lezymongo="lazymongo"' "$ZSHRC"
+append_once 'alias lm="lazymongo"' "$ZSHRC"
 
 # ---------- 8. Kubernetes ----------
 
@@ -557,14 +598,20 @@ brew install lazysql
 
 # ---------- 11. MongoDB ----------
 
-log "Instalando vi-mongo (requiere Go)"
+log "Instalando lazymongo (requiere Go)"
 if ! command -v go &>/dev/null; then
   warn "Go no está instalado. Instalando go vía brew..."
   brew install go
 fi
-# `go install` deja los binarios en ~/go/bin, que no está en el PATH por defecto
+# `go install` y `go build` colocan los binarios en ~/go/bin
 append_once 'export PATH="$HOME/go/bin:$PATH"' "$ZSHRC"
-go install github.com/kopecmaciej/vi-mongo@latest || warn "vi-mongo falló al instalar, revisa el repo por cambios: https://github.com/kopecmaciej/vi-mongo"
+if [ -d "$HOME/Development/jonathanleivag/lazymongo" ]; then
+  log "  Instalando lazymongo localmente desde $HOME/Development/jonathanleivag/lazymongo..."
+  (cd "$HOME/Development/jonathanleivag/lazymongo" && go install .)
+else
+  log "  Instalando lazymongo remotamente desde GitHub..."
+  go install github.com/jonathanleivag/lazymongo@latest || warn "lazymongo falló al instalar remotamente, puedes clonar e instalar localmente: https://github.com/jonathanleivag/lazymongo"
+fi
 
 log "Instalando mongosh (respaldo oficial de MongoDB)"
 brew install mongosh
@@ -819,7 +866,7 @@ echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
 echo "  - kubectl + k9s + kubectx/kubens + stern (Kubernetes)"
 echo "  - Docker + lazydocker"
 echo "  - lazysql (MySQL/PostgreSQL)"
-echo "  - vi-mongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
+echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
