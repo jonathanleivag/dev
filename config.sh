@@ -547,6 +547,7 @@ append_once 'alias gg="lazygit"' "$ZSHRC"
 append_once 'alias lazymongo="~/go/bin/lazymongo"' "$ZSHRC"
 append_once 'alias lezymongo="lazymongo"' "$ZSHRC"
 append_once 'alias lm="lazymongo"' "$ZSHRC"
+append_once 'alias tm="tmux-mosaic"' "$ZSHRC"
 
 # ---------- 8. Kubernetes ----------
 
