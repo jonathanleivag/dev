@@ -824,6 +824,67 @@ EOF
   echo "  Config creada en $TMUX_CONF"
 fi
 
+log "Instalando script tmux-mosaic en ~/go/bin"
+mkdir -p "$HOME/go/bin"
+cat > "$HOME/go/bin/tmux-mosaic" <<'EOF'
+#!/usr/bin/env bash
+#
+# tmux-mosaic
+#
+# Abre todas las subcarpetas (proyectos) de un directorio como paneles (splits)
+# en un mosaico perfectamente ordenado utilizando tmux.
+#
+# Uso:
+#   tmux-mosaic [/ruta/a/la/carpeta]
+#
+
+set -euo pipefail
+
+# Directorio base (por defecto el directorio actual)
+TARGET_DIR="${1:-.}"
+TARGET_DIR="$(cd "$TARGET_DIR" && pwd)"
+
+# Obtener subcarpetas
+directories=()
+while IFS= read -r -d '' dir; do
+  directories+=("$dir")
+done < <(find "$TARGET_DIR" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
+
+if [ ${#directories[@]} -eq 0 ]; then
+  echo "No se encontraron subcarpetas (proyectos) en: $TARGET_DIR"
+  exit 1
+fi
+
+SESSION_NAME="mosaico-$(basename "$TARGET_DIR" | tr '.' '-')"
+
+# Matar sesión si ya existe una con el mismo nombre para evitar conflictos
+if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+  tmux kill-session -t "$SESSION_NAME"
+fi
+
+# Iniciar la sesión de tmux en segundo plano con la primera carpeta
+cd "${directories[0]}"
+tmux new-session -d -s "$SESSION_NAME"
+
+# Crear un panel (split) para cada una de las carpetas restantes
+for ((i=1; i<${#directories[@]}; i++)); do
+  dir="${directories[i]}"
+  # Crear split horizontal en el directorio correspondiente
+  tmux split-window -t "$SESSION_NAME" -c "$dir"
+  # Reordenar automáticamente los paneles como mosaico (grid)
+  tmux select-layout -t "$SESSION_NAME" tiled
+done
+
+# Balancear el mosaico final por si acaso
+tmux select-layout -t "$SESSION_NAME" tiled
+
+# Acoplarse a la sesión de tmux
+tmux attach-session -t "$SESSION_NAME"
+EOF
+chmod +x "$HOME/go/bin/tmux-mosaic"
+echo "  Script tmux-mosaic creado y marcado como ejecutable."
+
+
 log "Instalando TPM (Tmux Plugin Manager)"
 TPM_DIR="$HOME/.tmux/plugins/tpm"
 if [ -d "$TPM_DIR" ]; then
