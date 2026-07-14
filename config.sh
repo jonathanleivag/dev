@@ -743,6 +743,55 @@ EOF
   echo "  Dashboard personalizado creado en $DASHBOARD_FILE"
 fi
 
+log "Configurando Kulala.nvim (REST Client para .http/.rest)"
+KULALA_FILE="$NVIM_CONFIG/lua/plugins/kulala.lua"
+if [ -f "$KULALA_FILE" ]; then
+  echo "  Kulala OK, ya configurado en $KULALA_FILE"
+else
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+  cat > "$KULALA_FILE" <<'EOF'
+return {
+  -- mistweaverco/kulala.nvim
+  {
+    "mistweaverco/kulala.nvim",
+    ft = { "http", "rest" },
+    keys = {
+      { "<leader>R", "", desc = "+Rest Client (Kulala)", mode = { "n" } },
+      { "<leader>Rr", function() require("kulala").run() end, desc = "Run request under cursor" },
+      { "<leader>Ra", function() require("kulala").run_all() end, desc = "Run all requests" },
+      { "<leader>Rp", function() require("kulala").scratchpad() end, desc = "Toggle scratchpad" },
+      { "<leader>Ri", function() require("kulala").inspect() end, desc = "Inspect request under cursor" },
+      { "<leader>Rn", function() require("kulala").jump_next() end, desc = "Jump to next request" },
+      { "<leader>RN", function() require("kulala").jump_prev() end, desc = "Jump to previous request" },
+      { "<leader>Rco", function() require("kulala").copy() end, desc = "Copy request under cursor as curl" },
+      { "<leader>Rcl", function() require("kulala").clear() end, desc = "Clear response" },
+    },
+    opts = {
+      split_direction = "vertical",
+      default_view = "body",
+      formatters = {
+        json = { "jq", "." },
+        xml = { "xmllint", "--format", "-" },
+        html = { "tidy", "-i", "-q", "--show-body-only", "yes", "--show-warnings", "no" },
+      },
+    },
+  },
+
+  -- Ensure treesitter has http and xml parsers for syntax highlighting
+  {
+    "nvim-treesitter/nvim-treesitter",
+    opts = function(_, opts)
+      if type(opts.ensure_installed) == "table" then
+        vim.list_extend(opts.ensure_installed, { "http", "xml", "json", "graphql" })
+      end
+    end,
+  },
+}
+EOF
+  echo "  Config de Kulala creada en $KULALA_FILE"
+fi
+
+
 log "Desactivando chequeo de orden de imports de LazyVim (falso positivo con extras.lua manual)"
 OPTIONS_FILE="$NVIM_CONFIG/lua/config/options.lua"
 if [ -f "$OPTIONS_FILE" ]; then
