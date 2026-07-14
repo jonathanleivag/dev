@@ -568,6 +568,23 @@ else
   warn "(por ejemplo, exportando el config de tu proveedor cloud o copiándolo desde donde ya lo usas con Lens)."
 fi
 
+# Configurar cargador dinámico de kubeconfigs en .zshrc
+if ! grep -qF "Cargar dinámicamente todos los archivos de configuración de Kubernetes" "$ZSHRC" 2>/dev/null; then
+  cat >> "$ZSHRC" <<'EOF'
+
+# Cargar dinámicamente todos los archivos de configuración de Kubernetes (config-*) en ~/.kube/
+export KUBECONFIG="$HOME/.kube/config"
+for config_file in "$HOME"/.kube/config-*; do
+  if [ -f "$config_file" ]; then
+    export KUBECONFIG="$KUBECONFIG:$config_file"
+  fi
+done
+EOF
+  echo "  + cargador dinámico de Kubeconfig agregado a $ZSHRC"
+else
+  echo "  OK, cargador dinámico de Kubeconfig ya configurado en $ZSHRC"
+fi
+
 log "Instalando k9s (+ kubectx/kubens, stern)"
 brew install k9s kubectx stern
 
