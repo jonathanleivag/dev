@@ -848,7 +848,7 @@ TARGET_DIR="$(cd "$TARGET_DIR" && pwd)"
 directories=()
 while IFS= read -r -d '' dir; do
   directories+=("$dir")
-done < <(find "$TARGET_DIR" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
+done < <(find -L "$TARGET_DIR" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
 
 if [ ${#directories[@]} -eq 0 ]; then
   echo "No se encontraron subcarpetas (proyectos) en: $TARGET_DIR"
