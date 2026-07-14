@@ -735,6 +735,80 @@ fi
 log "Instalando lazydocker"
 brew install lazydocker
 
+log "Configurando dbx (función Zsh para compilar Docker local y multi-plataforma)"
+if ! grep -qF "dbx: Compilar imágenes Docker" "$ZSHRC" 2>/dev/null; then
+  cat >> "$ZSHRC" <<'EOF'
+
+# dbx: Compilar imágenes Docker local y multi-plataforma
+dbx() {
+  local dockerfile="Dockerfile"
+  local proyecto=""
+  local tag="latest"
+  local push_flag=false
+
+  # Separar el flag --push de los argumentos posicionales
+  local args=()
+  for arg in "$@"; do
+    if [[ "$arg" == "--push" ]]; then
+      push_flag=true
+    else
+      args+=("$arg")
+    fi
+  done
+
+  # Parsear argumentos posicionales
+  if [[ ${#args[@]} -eq 3 ]]; then
+    dockerfile="${args[1]}"
+    proyecto="${args[2]}"
+    tag="${args[3]}"
+  elif [[ ${#args[@]} -eq 2 ]]; then
+    # Si el primer argumento es un archivo que existe, asumimos que es el Dockerfile
+    if [[ -f "${args[1]}" ]]; then
+      dockerfile="${args[1]}"
+      proyecto="${args[2]}"
+    else
+      proyecto="${args[1]}"
+      tag="${args[2]}"
+    fi
+  elif [[ ${#args[@]} -eq 1 ]]; then
+    proyecto="${args[1]}"
+  else
+    echo "Uso: dbx [dockerfile] <proyecto> [tag] [--push]"
+    echo "Ejemplos:"
+    echo "  dbx mi-app                          # Construye localmente (M1/arm64)"
+    echo "  dbx mi-app 1.0.0 --push             # Multi-plataforma (amd64/arm64) y hace push"
+    echo "  dbx Dockerfile.dev mi-app 1.0       # Usa Dockerfile.dev de forma local"
+    echo "  dbx Dockerfile.dev mi-app 1.0 --push"
+    return 1
+  fi
+
+  if [[ -z "$proyecto" ]]; then
+    echo "Error: Debes especificar el nombre del proyecto/imagen."
+    return 1
+  fi
+
+  if [[ ! -f "$dockerfile" ]]; then
+    echo "Error: El archivo Dockerfile '$dockerfile' no existe."
+    return 1
+  fi
+
+  local full_tag="${proyecto}:${tag}"
+
+  if [ "$push_flag" = true ]; then
+    echo "Compilando multi-plataforma (linux/amd64, linux/arm64) y haciendo push..."
+    docker buildx build --platform linux/amd64,linux/arm64 -f "$dockerfile" -t "$full_tag" --push .
+  else
+    echo "Compilando localmente para tu arquitectura (M1/arm64) y cargando en Docker local..."
+    docker buildx build -f "$dockerfile" -t "$full_tag" --load .
+  fi
+}
+EOF
+  echo "  + función dbx agregada a $ZSHRC"
+else
+  echo "  OK, función dbx ya configurada en $ZSHRC"
+fi
+
+
 # ---------- 10. Bases de datos relacionales ----------
 
 log "Instalando lazysql (MySQL + PostgreSQL)"
