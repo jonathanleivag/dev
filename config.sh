@@ -574,7 +574,7 @@ if ! grep -qF "Cargar dinámicamente todos los archivos de configuración de Kub
 
 # Cargar dinámicamente todos los archivos de configuración de Kubernetes (config-*) en ~/.kube/
 export KUBECONFIG="$HOME/.kube/config"
-for config_file in "$HOME"/.kube/config-*; do
+for config_file in "$HOME"/.kube/config-*(N); do
   if [ -f "$config_file" ]; then
     export KUBECONFIG="$KUBECONFIG:$config_file"
   fi
