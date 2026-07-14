@@ -228,16 +228,16 @@ if ! command -v nvm &>/dev/null; then
   export NVM_DIR="$HOME/.nvm"
   # shellcheck disable=SC1091
   [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
-
-  # Asegurar que quede en .zshrc para futuras sesiones (el instalador de nvm
-  # normalmente ya lo agrega, pero lo confirmamos por si acaso)
-  touch "$HOME/.zshrc"
-  append_once 'export NVM_DIR="$HOME/.nvm"' "$HOME/.zshrc"
-  append_once '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' "$HOME/.zshrc"
-  append_once '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' "$HOME/.zshrc"
 else
   echo "  nvm OK ($(nvm --version))"
 fi
+
+# Asegurar que quede en .zshrc para futuras sesiones (el instalador de nvm
+# normalmente ya lo agrega, pero lo confirmamos por si acaso)
+touch "$HOME/.zshrc"
+append_once 'export NVM_DIR="$HOME/.nvm"' "$HOME/.zshrc"
+append_once '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' "$HOME/.zshrc"
+append_once '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' "$HOME/.zshrc"
 
 # Instalar Node LTS si no hay ninguna versión de node instalada vía nvm
 if command -v nvm &>/dev/null && [ -z "$(nvm ls --no-colors 2>/dev/null | grep -v 'N/A')" ]; then
