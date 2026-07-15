@@ -710,6 +710,19 @@ k9s:
 EOF
 echo "  Configuración y skin de k9s creados exitosamente."
 
+log "Configurando editor por defecto en .zshrc para k9s y kubectl"
+if ! grep -qF "K9S_EDITOR" "$ZSHRC" 2>/dev/null; then
+  cat >> "$ZSHRC" <<'EOF'
+
+# Editor preferido para herramientas CLI (k9s, git, kubectl, etc.)
+export EDITOR="nvim"
+export K9S_EDITOR="nvim"
+EOF
+  echo "  + EDITOR y K9S_EDITOR agregados a $ZSHRC"
+else
+  echo "  OK, EDITOR y K9S_EDITOR ya configurados en $ZSHRC"
+fi
+
 # ---------- 9. Docker ----------
 
 log "Verificando Docker"
