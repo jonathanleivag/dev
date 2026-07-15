@@ -599,7 +599,8 @@ k9s:
   infoColor:
     fg: lightskyblue
   enableMouse: true
-  skin: catppuccin-mocha
+  ui:
+    skin: catppuccin-mocha
   headless: false
   logoless: false
   crumbsless: false
@@ -624,32 +625,39 @@ cat > "$K9S_CONFIG_DIR/skins/catppuccin-mocha.yaml" <<'EOF'
 # Catppuccin Mocha Skin for K9s
 k9s:
   body:
-    fg: "#cdd6f4"
-    bg: "default"
+    fgColor: "#cdd6f4"
+    bgColor: default
     logoColor: "#cba6f7"
-  info:
-    fg: "#89b4fa"
-    sectionFg: "#a6e3a1"
+  prompt:
+    fgColor: "#cdd6f4"
+    bgColor: default
+    suggestColor: "#89b4fa"
+  help:
+    fgColor: "#cdd6f4"
+    bgColor: default
+    sectionColor: "#a6e3a1"
+    keyColor: "#89b4fa"
+    numKeyColor: "#eba0ac"
   dialog:
-    fg: "#cdd6f4"
-    bg: "default"
-    buttonFg: "#11111b"
-    buttonBg: "#cba6f7"
-    activeButtonFg: "#11111b"
-    activeButtonBg: "#a6e3a1"
-    maskBg: "default"
+    fgColor: "#cdd6f4"
+    bgColor: default
+    buttonFgColor: "#11111b"
+    buttonBgColor: "#cba6f7"
+    activeButtonFgColor: "#11111b"
+    activeButtonBgColor: "#a6e3a1"
+    maskBgColor: default
   frame:
     border:
-      fg: "#585b70"
-      focusFg: "#cba6f7"
+      fgColor: "#585b70"
+      focusColor: "#cba6f7"
     menu:
-      fg: "#bac2de"
-      keyFg: "#f38ba8"
-      numFg: "#fab387"
+      fgColor: "#bac2de"
+      keyColor: "#f38ba8"
+      numKeyColor: "#fab387"
     crumbs:
-      fg: "#11111b"
-      bg: "#f5c2e7"
-      activeBg: "#cba6f7"
+      fgColor: "#11111b"
+      bgColor: "#f5c2e7"
+      activeBgColor: "#cba6f7"
     status:
       newColor: "#89b4fa"
       modifyColor: "#f9e2af"
@@ -660,12 +668,14 @@ k9s:
       killColor: "#f38ba8"
       completedColor: "#bac2de"
     title:
-      fg: "#89b4fa"
-      counterFg: "#cba6f7"
-      filterFg: "#f38ba8"
+      fgColor: "#89b4fa"
+      bgColor: default
+      highlightColor: "#f5c2e7"
+      counterColor: "#cba6f7"
+      filterColor: "#f38ba8"
   views:
     charts:
-      bgColor: "default"
+      bgColor: default
       defaultDialColor: "#89b4fa"
       defaultChartColor: "#89b4fa"
       resourceColors:
@@ -678,23 +688,23 @@ k9s:
           - "#f9e2af"
           - "#f38ba8"
     table:
-      fg: "#cdd6f4"
-      bg: "default"
-      cursorFg: "#11111b"
-      cursorBg: "#cba6f7"
-      cursorLineFg: "#cdd6f4"
-      cursorLineBg: "#313244"
-      markFg: "#a6e3a1"
-      markBg: "default"
+      fgColor: "#cdd6f4"
+      bgColor: default
+      cursorFgColor: "#11111b"
+      cursorBgColor: "#cba6f7"
+      cursorLineFgColor: "#cdd6f4"
+      cursorLineBgColor: "#313244"
+      markFgColor: "#a6e3a1"
+      markBgColor: default
       header:
-        fg: "#f9e2af"
-        bg: "default"
-        sorterFg: "#cba6f7"
+        fgColor: "#f9e2af"
+        bgColor: default
+        sorterFgColor: "#cba6f7"
     xray:
-      fg: "#cdd6f4"
-      bg: "default"
-      cursorFg: "#11111b"
-      cursorBg: "#cba6f7"
+      fgColor: "#cdd6f4"
+      bgColor: default
+      cursorFgColor: "#11111b"
+      cursorBgColor: "#cba6f7"
       graphicColor: "#cba6f7"
       showVisualizer: true
     yaml:
@@ -702,11 +712,11 @@ k9s:
       valueColor: "#cdd6f4"
       colonColor: "#bac2de"
     logs:
-      fg: "#cdd6f4"
-      bg: "default"
+      fgColor: "#cdd6f4"
+      bgColor: default
       indicator:
-        fg: "#cba6f7"
-        bg: "default"
+        fgColor: "#cba6f7"
+        bgColor: default
 EOF
 echo "  Configuración y skin de k9s creados exitosamente."
 
