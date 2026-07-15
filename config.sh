@@ -1015,6 +1015,26 @@ else
   echo "  Creado $OPTIONS_FILE"
 fi
 
+log "Configurando atajos de Neovim (~/.config/nvim/lua/config/keymaps.lua)"
+KEYMAPS_FILE="$NVIM_CONFIG/lua/config/keymaps.lua"
+if ! grep -qF "LazyVim.terminal({ \"lazymongo\" }" "$KEYMAPS_FILE" 2>/dev/null; then
+  mkdir -p "$(dirname "$KEYMAPS_FILE")"
+  cat >> "$KEYMAPS_FILE" <<'EOF'
+
+-- Abrir lazymongo con "<leader>lm" o "lm" directamente
+vim.keymap.set("n", "<leader>lm", function()
+  LazyVim.terminal({ "lazymongo" }, { esc_esc = false, ctrl_hjkl = false })
+end, { desc = "LazyMongo" })
+
+vim.keymap.set("n", "lm", function()
+  LazyVim.terminal({ "lazymongo" }, { esc_esc = false, ctrl_hjkl = false })
+end, { desc = "LazyMongo (Directo)" })
+EOF
+  echo "  + atajos para lazymongo agregados a $KEYMAPS_FILE"
+else
+  echo "  OK, atajos para lazymongo ya configurados en $KEYMAPS_FILE"
+fi
+
 # ---------- 13. tmux ----------
 
 log "Verificando tmux"
