@@ -589,7 +589,11 @@ log "Instalando k9s (+ kubectx/kubens, stern)"
 brew install k9s kubectx stern
 
 log "Configurando k9s (Skin Catppuccin Mocha y soporte para mouse)"
-K9S_CONFIG_DIR="$HOME/.config/k9s"
+if [ "$(uname)" = "Darwin" ]; then
+  K9S_CONFIG_DIR="$HOME/Library/Application Support/k9s"
+else
+  K9S_CONFIG_DIR="$HOME/.config/k9s"
+fi
 mkdir -p "$K9S_CONFIG_DIR/skins"
 
 cat > "$K9S_CONFIG_DIR/config.yaml" <<'EOF'
@@ -598,8 +602,8 @@ k9s:
   maxRequestsCol: 500
   infoColor:
     fg: lightskyblue
-  enableMouse: true
   ui:
+    enableMouse: true
     skin: catppuccin-mocha
   headless: false
   logoless: false
