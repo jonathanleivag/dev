@@ -1089,6 +1089,25 @@ else
   echo "  OK, atajos para lazymongo ya configurados en $KEYMAPS_FILE"
 fi
 
+if ! grep -qF "vim.keymap.set(\"n\", \"<leader>cp\"" "$KEYMAPS_FILE" 2>/dev/null; then
+  cat >> "$KEYMAPS_FILE" <<'EOF'
+
+-- Copiar la ruta del archivo actual al portapapeles
+vim.keymap.set("n", "<leader>cp", function()
+  local path = vim.fn.expand("%")
+  vim.fn.setreg("+", path)
+  vim.notify('Ruta relativa copiada: "' .. path .. '"', vim.log.levels.INFO, { title = "Copiar Ruta" })
+end, { desc = "Copiar ruta relativa" })
+
+vim.keymap.set("n", "<leader>cP", function()
+  local path = vim.fn.expand("%:p")
+  vim.fn.setreg("+", path)
+  vim.notify('Ruta absoluta copiada: "' .. path .. '"', vim.log.levels.INFO, { title = "Copiar Ruta" })
+end, { desc = "Copiar ruta absoluta" })
+EOF
+  echo "  + atajos para copiar ruta agregados a $KEYMAPS_FILE"
+fi
+
 # ---------- 13. tmux ----------
 
 log "Verificando tmux"
