@@ -969,6 +969,33 @@ EOF
   echo "  Dashboard personalizado creado en $DASHBOARD_FILE"
 fi
 
+log "Configurando transparencia de tema en Neovim (~/.config/nvim/lua/plugins/theme.lua)"
+THEME_FILE="$NVIM_CONFIG/lua/plugins/theme.lua"
+if [ -f "$THEME_FILE" ]; then
+  warn "Ya existe $THEME_FILE — no se sobreescribe para no perder tus ajustes."
+else
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+  cat > "$THEME_FILE" <<'EOF'
+-- Configuración de transparencia para el tema tokyonight
+-- Generado por setup-terminal-stack.sh
+return {
+  {
+    "folke/tokyonight.nvim",
+    lazy = false,
+    opts = {
+      transparent = true,
+      styles = {
+        sidebars = "transparent",
+        floats = "transparent",
+      },
+    },
+  },
+}
+EOF
+  echo "  Configuración de transparencia creada en $THEME_FILE"
+fi
+
+
 log "Configurando Kulala.nvim (REST Client para .http/.rest)"
 KULALA_FILE="$NVIM_CONFIG/lua/plugins/kulala.lua"
 if [ -f "$KULALA_FILE" ]; then
