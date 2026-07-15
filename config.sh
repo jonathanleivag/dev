@@ -1059,6 +1059,24 @@ bind j select-pane -D
 bind k select-pane -U
 bind l select-pane -R
 
+# Moverse entre paneles con Prefix + Número (Ctrl+a 1-9)
+bind-key 1 select-pane -t 1
+bind-key 2 select-pane -t 2
+bind-key 3 select-pane -t 3
+bind-key 4 select-pane -t 4
+bind-key 5 select-pane -t 5
+bind-key 6 select-pane -t 6
+bind-key 7 select-pane -t 7
+bind-key 8 select-pane -t 8
+bind-key 9 select-pane -t 9
+
+# Mostrar el número y nombre del proyecto en el borde superior de cada panel
+set -g pane-border-status top
+set -g pane-border-format " #[fg=cyan,bold] Panel #P #[fg=white,nobold]» #[fg=white,bold]#{b:pane_current_path} #[fg=green,dim](#{pane_current_command}) "
+set -g pane-active-border-style fg=cyan,bold
+set -g pane-border-style fg=colour240
+
+
 # Empezar a contar ventanas/paneles desde 1, no 0
 set -g base-index 1
 setw -g pane-base-index 1
