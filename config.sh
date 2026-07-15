@@ -625,19 +625,19 @@ cat > "$K9S_CONFIG_DIR/skins/catppuccin-mocha.yaml" <<'EOF'
 k9s:
   body:
     fg: "#cdd6f4"
-    bg: "#1e1e2e"
+    bg: "default"
     logoColor: "#cba6f7"
   info:
     fg: "#89b4fa"
     sectionFg: "#a6e3a1"
   dialog:
     fg: "#cdd6f4"
-    bg: "#1e1e2e"
+    bg: "default"
     buttonFg: "#11111b"
     buttonBg: "#cba6f7"
     activeButtonFg: "#11111b"
     activeButtonBg: "#a6e3a1"
-    maskBg: "#1e1e2e"
+    maskBg: "default"
   frame:
     border:
       fg: "#585b70"
@@ -665,7 +665,7 @@ k9s:
       filterFg: "#f38ba8"
   views:
     charts:
-      bgColor: "#1e1e2e"
+      bgColor: "default"
       defaultDialColor: "#89b4fa"
       defaultChartColor: "#89b4fa"
       resourceColors:
@@ -679,20 +679,20 @@ k9s:
           - "#f38ba8"
     table:
       fg: "#cdd6f4"
-      bg: "#1e1e2e"
+      bg: "default"
       cursorFg: "#11111b"
       cursorBg: "#cba6f7"
       cursorLineFg: "#cdd6f4"
       cursorLineBg: "#313244"
       markFg: "#a6e3a1"
-      markBg: "#1e1e2e"
+      markBg: "default"
       header:
         fg: "#f9e2af"
-        bg: "#1e1e2e"
+        bg: "default"
         sorterFg: "#cba6f7"
     xray:
       fg: "#cdd6f4"
-      bg: "#1e1e2e"
+      bg: "default"
       cursorFg: "#11111b"
       cursorBg: "#cba6f7"
       graphicColor: "#cba6f7"
@@ -703,10 +703,10 @@ k9s:
       colonColor: "#bac2de"
     logs:
       fg: "#cdd6f4"
-      bg: "#1e1e2e"
+      bg: "default"
       indicator:
         fg: "#cba6f7"
-        bg: "#1e1e2e"
+        bg: "default"
 EOF
 echo "  Configuración y skin de k9s creados exitosamente."
 
