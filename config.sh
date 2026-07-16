@@ -549,6 +549,18 @@ append_once 'alias lezymongo="lazymongo"' "$ZSHRC"
 append_once 'alias lm="lazymongo"' "$ZSHRC"
 append_once 'alias tm="tmux-mosaic"' "$ZSHRC"
 
+# Alias de Colima & Docker
+append_once 'alias cos="colima start --cpu 2 --memory 4"' "$ZSHRC"
+append_once 'alias cox="colima stop"' "$ZSHRC"
+append_once 'alias coh="colima status"' "$ZSHRC"
+append_once 'alias d="docker"' "$ZSHRC"
+append_once 'alias dc="docker compose"' "$ZSHRC"
+append_once 'alias dps="docker ps --format '\''table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}'\''"' "$ZSHRC"
+append_once 'alias di="docker images"' "$ZSHRC"
+append_once 'alias dexec="docker exec -it"' "$ZSHRC"
+append_once 'alias dlogs="docker logs -f"' "$ZSHRC"
+append_once 'alias dclean="docker system prune -a --volumes"' "$ZSHRC"
+
 # ---------- 8. Kubernetes ----------
 
 log "Verificando kubectl"
