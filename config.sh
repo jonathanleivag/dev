@@ -850,9 +850,44 @@ dbx() {
 }
 EOF
   echo "  + función dbx agregada a $ZSHRC"
-else
-  echo "  OK, función dbx ya configurada en $ZSHRC"
 fi
+
+log "Configurando dpx (función Zsh para hacer push de imágenes locales)"
+if ! grep -qF "dpx: Hacer push de una imagen local" "$ZSHRC" 2>/dev/null; then
+  cat >> "$ZSHRC" <<'EOF'
+
+# dpx: Hacer push de una imagen local de Docker al registro
+dpx() {
+  local proyecto=""
+  local tag="latest"
+
+  if [[ $# -eq 2 ]]; then
+    proyecto="$1"
+    tag="$2"
+  elif [[ $# -eq 1 ]]; then
+    if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+      echo "Uso: dpx <proyecto> [tag]"
+      echo "  dpx mi-app                          # Hace push de mi-app:latest"
+      echo "  dpx mi-app 1.0.0                    # Hace push de mi-app:1.0.0"
+      return 0
+    fi
+    proyecto="$1"
+  else
+    echo "Error: Argumentos inválidos."
+    echo "Uso: dpx <proyecto> [tag]"
+    return 1
+  fi
+
+  local full_tag="${proyecto}:${tag}"
+  echo "Haciendo push de la imagen local: ${full_tag}..."
+  docker push "$full_tag"
+}
+EOF
+  echo "  + función dpx agregada a $ZSHRC"
+else
+  echo "  OK, función dpx ya configurada en $ZSHRC"
+fi
+
 
 
 # ---------- 10. Bases de datos relacionales ----------
