@@ -560,6 +560,7 @@ append_once 'alias di="docker images"' "$ZSHRC"
 append_once 'alias dexec="docker exec -it"' "$ZSHRC"
 append_once 'alias dlogs="docker logs -f"' "$ZSHRC"
 append_once 'alias dclean="docker system prune -a --volumes"' "$ZSHRC"
+append_once 'alias ld="lazydocker"' "$ZSHRC"
 
 # ---------- 8. Kubernetes ----------
 
