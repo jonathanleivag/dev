@@ -737,26 +737,33 @@ else
   echo "  OK, EDITOR y K9S_EDITOR ya configurados en $ZSHRC"
 fi
 
-# ---------- 9. Docker ----------
+# ---------- 9. Colima & Docker ----------
 
-log "Verificando Docker"
-if command -v docker &>/dev/null; then
-  echo "  Docker CLI OK ($(docker --version))"
-  if docker info &>/dev/null; then
-    echo "  Docker daemon corriendo OK"
-  else
-    warn "Docker está instalado pero el daemon no responde. Abre Docker Desktop (o inicia el daemon) antes de usar lazydocker."
-  fi
+log "Verificando Colima (Docker sin Docker Desktop)"
+if command -v colima &>/dev/null; then
+  echo "  Colima OK ($(colima version | head -n 1))"
 else
-  warn "Docker no encontrado."
-  read -r -p "  ¿Quieres instalar Docker Desktop ahora? (y/n) " respuesta_docker
-  if [ "$respuesta_docker" = "y" ] || [ "$respuesta_docker" = "Y" ]; then
-    brew install --cask docker
-    warn "Docker Desktop se instaló pero necesita abrirse manualmente al menos una vez"
-    warn "(aceptar términos, dar permisos) antes de que lazydocker pueda usarlo."
-  else
-    warn "Se omite Docker. lazydocker se instalará igual, pero no funcionará hasta que tengas Docker corriendo."
-  fi
+  warn "Colima no encontrado. Instalando Colima y Docker CLI..."
+  brew install colima docker docker-buildx
+  # Configurar plugin de buildx para que Docker lo reconozca
+  mkdir -p "$HOME/.docker/cli-plugins"
+  ln -sfn "$(brew --prefix)/opt/docker-buildx/bin/docker-buildx" "$HOME/.docker/cli-plugins/docker-buildx"
+fi
+
+log "Verificando si Colima está corriendo"
+if colima status &>/dev/null; then
+  echo "  Colima está corriendo y el socket de Docker está activo."
+else
+  warn "Colima no está iniciado. Iniciando Colima..."
+  # Iniciamos Colima con recursos balanceados (2 CPUs, 4GB RAM)
+  colima start --cpu 2 --memory 4
+fi
+
+log "Verificando Docker Daemon"
+if docker info &>/dev/null; then
+  echo "  Docker daemon responde correctamente."
+else
+  warn "El daemon de Docker no responde. Intenta ejecutar 'colima start' manualmente."
 fi
 
 log "Instalando lazydocker"
