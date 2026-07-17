@@ -562,6 +562,36 @@ append_once 'alias dlogs="docker logs -f"' "$ZSHRC"
 append_once 'alias dclean="docker system prune -a --volumes"' "$ZSHRC"
 append_once 'alias ld="lazydocker"' "$ZSHRC"
 
+if ! grep -q "ia()" "$ZSHRC" 2>/dev/null; then
+  cat <<'EOF' >> "$ZSHRC"
+
+# ia: Abre un mosaico de terminales (mosaico tmux) con Claude Code, Codex CLI y Antigravity CLI
+ia() {
+  if [ -n "$TMUX" ]; then
+    # Ya estamos dentro de una sesión de tmux: creamos una nueva ventana y la dividimos
+    tmux new-window -n "AI-Mosaic" 'claude'
+    tmux split-window -h 'codex'
+    tmux split-window -h 'agy'
+    tmux select-layout even-horizontal
+    tmux select-pane -t 0
+  else
+    # Fuera de tmux: creamos una nueva sesión o nos reconectamos a una existente
+    if tmux has-session -t ia 2>/dev/null; then
+      tmux attach-session -t ia
+    else
+      tmux new-session -d -s ia -n "AI-Mosaic" 'claude'
+      tmux split-window -h -t ia 'codex'
+      tmux split-window -h -t ia 'agy'
+      tmux select-layout -t ia even-horizontal
+      tmux select-pane -t ia:0.0
+      tmux attach-session -t ia
+    fi
+  fi
+}
+EOF
+  echo "  + función 'ia' agregada a $ZSHRC"
+fi
+
 # ---------- 8. Kubernetes ----------
 
 log "Verificando kubectl"
