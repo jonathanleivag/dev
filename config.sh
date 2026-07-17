@@ -584,7 +584,7 @@ ia() {
     if tmux has-session -t ia 2>/dev/null; then
       tmux attach-session -t ia
     else
-      local p1=$(tmux new-session -d -s ia -n "AI-Mosaic" -P -F "#{pane_id}" 'zsh')
+      local p1=$(tmux new-session -d -s ia -n "AI-Mosaic" -x "${COLUMNS:-200}" -y "${LINES:-50}" -P -F "#{pane_id}" 'zsh')
       local p2=$(tmux split-window -h -t "$p1" -P -F "#{pane_id}" 'zsh')
       local p3=$(tmux split-window -h -t "$p2" -P -F "#{pane_id}" 'zsh')
       tmux select-layout -t "$p1" even-horizontal
