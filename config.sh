@@ -332,10 +332,10 @@ mouse-hide-while-typing = true
 keybind = super+v=paste_from_clipboard
 
 # Vim-style split pane navigation
-keybind = super+alt+h = goto_split:left
-keybind = super+alt+j = goto_split:down
-keybind = super+alt+k = goto_split:up
-keybind = super+alt+l = goto_split:right
+keybind = super+shift+h = goto_split:left
+keybind = super+shift+j = goto_split:down
+keybind = super+shift+k = goto_split:up
+keybind = super+shift+l = goto_split:right
 EOF
 else
   cat > "$GHOSTTY_CONFIG_FILE" <<'EOF'
@@ -354,10 +354,10 @@ mouse-hide-while-typing = true
 keybind = super+v=paste_from_clipboard
 
 # Vim-style split pane navigation
-keybind = super+alt+h = goto_split:left
-keybind = super+alt+j = goto_split:down
-keybind = super+alt+k = goto_split:up
-keybind = super+alt+l = goto_split:right
+keybind = super+shift+h = goto_split:left
+keybind = super+shift+j = goto_split:down
+keybind = super+shift+k = goto_split:up
+keybind = super+shift+l = goto_split:right
 EOF
   echo "  Config creada en $GHOSTTY_CONFIG_FILE"
 fi
