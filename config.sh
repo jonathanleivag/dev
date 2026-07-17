@@ -1390,11 +1390,11 @@ else
 fi
 
 log "Verificando Codex CLI"
-if brew list --cask codex &>/dev/null; then
+if command -v codex &>/dev/null; then
   echo "  Codex CLI OK, ya instalado"
 else
   warn "Codex CLI no encontrado. Instalando..."
-  brew install --cask codex
+  curl -fsSL https://chatgpt.com/codex/install.sh | sh
 fi
 
 log "Verificando Antigravity CLI"
