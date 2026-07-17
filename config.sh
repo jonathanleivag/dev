@@ -568,32 +568,31 @@ if ! grep -q "ia()" "$ZSHRC" 2>/dev/null; then
 # ia: Abre un mosaico de terminales (mosaico tmux) con Claude Code, Codex CLI y Antigravity CLI
 ia() {
   if [ -n "$TMUX" ]; then
-    # Ya estamos dentro de una sesión de tmux: creamos una nueva ventana y la dividimos ejecutando zsh interactivo
-    tmux new-window -n "AI-Mosaic" 'zsh'
-    tmux split-window -h 'zsh'
-    tmux split-window -h 'zsh'
-    tmux select-layout even-horizontal
+    # Ya estamos dentro de una sesión de tmux: creamos una nueva ventana y obtenemos el ID del primer panel
+    local p1=$(tmux new-window -n "AI-Mosaic" -P -F "#{pane_id}" 'zsh')
+    local p2=$(tmux split-window -h -t "$p1" -P -F "#{pane_id}" 'zsh')
+    local p3=$(tmux split-window -h -t "$p2" -P -F "#{pane_id}" 'zsh')
+    tmux select-layout -t "$p1" even-horizontal
     
-    # Enviamos los comandos a cada panel para que carguen el PATH e interactividad correctamente
-    tmux send-keys -t 0 'claude' C-m
-    tmux send-keys -t 1 'codex' C-m
-    tmux send-keys -t 2 'agy' C-m
-    tmux select-pane -t 0
+    # Enviamos los comandos a cada ID de panel único (independiente de base-index o pane-base-index)
+    tmux send-keys -t "$p1" 'claude' C-m
+    tmux send-keys -t "$p2" 'codex' C-m
+    tmux send-keys -t "$p3" 'agy' C-m
+    tmux select-pane -t "$p1"
   else
     # Fuera de tmux: creamos una nueva sesión o nos reconectamos a una existente
     if tmux has-session -t ia 2>/dev/null; then
       tmux attach-session -t ia
     else
-      tmux new-session -d -s ia -n "AI-Mosaic" 'zsh'
-      tmux split-window -h -t ia 'zsh'
-      tmux split-window -h -t ia 'zsh'
-      tmux select-layout -t ia even-horizontal
+      local p1=$(tmux new-session -d -s ia -n "AI-Mosaic" -P -F "#{pane_id}" 'zsh')
+      local p2=$(tmux split-window -h -t "$p1" -P -F "#{pane_id}" 'zsh')
+      local p3=$(tmux split-window -h -t "$p2" -P -F "#{pane_id}" 'zsh')
+      tmux select-layout -t "$p1" even-horizontal
       
-      # Enviamos los comandos a los paneles de la sesión inactiva
-      tmux send-keys -t ia:0.0 'claude' C-m
-      tmux send-keys -t ia:0.1 'codex' C-m
-      tmux send-keys -t ia:0.2 'agy' C-m
-      tmux select-pane -t ia:0.0
+      tmux send-keys -t "$p1" 'claude' C-m
+      tmux send-keys -t "$p2" 'codex' C-m
+      tmux send-keys -t "$p3" 'agy' C-m
+      tmux select-pane -t "$p1"
       
       tmux attach-session -t ia
     fi
