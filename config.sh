@@ -1000,6 +1000,7 @@ return {
   { import = "lazyvim.plugins.extras.lang.astro" },
   { import = "lazyvim.plugins.extras.lang.tailwind" },
   { import = "lazyvim.plugins.extras.lang.json" },
+  { import = "lazyvim.plugins.extras.lang.markdown" },
   { import = "lazyvim.plugins.extras.formatting.prettier" },
   { import = "lazyvim.plugins.extras.linting.eslint" },
 }
@@ -1167,6 +1168,16 @@ vim.keymap.set("n", "<leader>cP", function()
 end, { desc = "Copiar ruta absoluta" })
 EOF
   echo "  + atajos para copiar ruta agregados a $KEYMAPS_FILE"
+fi
+
+log "Compilando dependencias de markdown-preview.nvim"
+# Forzar descarga de los extras de markdown en modo headless
+nvim --headless "+Lazy! sync" +qa &>/dev/null
+
+MARKDOWN_PREVIEW_APP_DIR="$HOME/.local/share/nvim/lazy/markdown-preview.nvim/app"
+if [ -d "$MARKDOWN_PREVIEW_APP_DIR" ]; then
+  (cd "$MARKDOWN_PREVIEW_APP_DIR" && npm install --silent)
+  echo "  + npm install completado para markdown-preview.nvim"
 fi
 
 # ---------- 13. tmux ----------
