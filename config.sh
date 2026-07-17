@@ -331,6 +331,9 @@ mouse-hide-while-typing = true
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
 keybind = super+v=paste_from_clipboard
 
+# Split navigation up/down using Cmd+{ and Cmd+}
+keybind = super+shift+[ = goto_split:up
+keybind = super+shift+] = goto_split:down
 EOF
 else
   cat > "$GHOSTTY_CONFIG_FILE" <<'EOF'
@@ -347,6 +350,10 @@ mouse-hide-while-typing = true
 # Keybind explícito de paste (texto). NO habilita pegado de imágenes —
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
 keybind = super+v=paste_from_clipboard
+
+# Split navigation up/down using Cmd+{ and Cmd+}
+keybind = super+shift+[ = goto_split:up
+keybind = super+shift+] = goto_split:down
 EOF
   echo "  Config creada en $GHOSTTY_CONFIG_FILE"
 fi
