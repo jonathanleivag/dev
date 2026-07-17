@@ -331,11 +331,16 @@ mouse-hide-while-typing = true
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
 keybind = super+v=paste_from_clipboard
 
-# Vim-style split pane navigation
-keybind = super+shift+h = goto_split:left
-keybind = super+shift+j = goto_split:down
-keybind = super+shift+k = goto_split:up
-keybind = super+shift+l = goto_split:right
+# Vim-style split pane navigation (Ctrl+Option+H/J/K/L o Cmd+Ctrl+H/J/K/L)
+keybind = ctrl+alt+h = goto_split:left
+keybind = ctrl+alt+j = goto_split:down
+keybind = ctrl+alt+k = goto_split:up
+keybind = ctrl+alt+l = goto_split:right
+
+keybind = super+ctrl+h = goto_split:left
+keybind = super+ctrl+j = goto_split:down
+keybind = super+ctrl+k = goto_split:up
+keybind = super+ctrl+l = goto_split:right
 EOF
 else
   cat > "$GHOSTTY_CONFIG_FILE" <<'EOF'
@@ -353,11 +358,16 @@ mouse-hide-while-typing = true
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
 keybind = super+v=paste_from_clipboard
 
-# Vim-style split pane navigation
-keybind = super+shift+h = goto_split:left
-keybind = super+shift+j = goto_split:down
-keybind = super+shift+k = goto_split:up
-keybind = super+shift+l = goto_split:right
+# Vim-style split pane navigation (Ctrl+Option+H/J/K/L o Cmd+Ctrl+H/J/K/L)
+keybind = ctrl+alt+h = goto_split:left
+keybind = ctrl+alt+j = goto_split:down
+keybind = ctrl+alt+k = goto_split:up
+keybind = ctrl+alt+l = goto_split:right
+
+keybind = super+ctrl+h = goto_split:left
+keybind = super+ctrl+j = goto_split:down
+keybind = super+ctrl+k = goto_split:up
+keybind = super+ctrl+l = goto_split:right
 EOF
   echo "  Config creada en $GHOSTTY_CONFIG_FILE"
 fi
