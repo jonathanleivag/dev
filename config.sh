@@ -332,8 +332,8 @@ mouse-hide-while-typing = true
 keybind = super+v=paste_from_clipboard
 
 # Split navigation up/down using Cmd+{ and Cmd+}
-keybind = super+shift+[ = goto_split:up
-keybind = super+shift+] = goto_split:down
+keybind = super+shift+[=goto_split:up
+keybind = super+shift+]=goto_split:down
 EOF
 else
   cat > "$GHOSTTY_CONFIG_FILE" <<'EOF'
@@ -352,8 +352,8 @@ mouse-hide-while-typing = true
 keybind = super+v=paste_from_clipboard
 
 # Split navigation up/down using Cmd+{ and Cmd+}
-keybind = super+shift+[ = goto_split:up
-keybind = super+shift+] = goto_split:down
+keybind = super+shift+[=goto_split:up
+keybind = super+shift+]=goto_split:down
 EOF
   echo "  Config creada en $GHOSTTY_CONFIG_FILE"
 fi
