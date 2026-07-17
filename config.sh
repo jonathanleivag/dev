@@ -178,7 +178,7 @@ customCommands:
   # Generar commit automático con IA para los cambios staged
   - key: 'g'
     command: >
-      git commit -m "$(git diff --cached | agy -p 'Analiza el diff de git y genera un mensaje de commit convencional corto, conciso y en una sola línea. Devuelve ÚNICAMENTE la línea del mensaje, sin explicaciones ni formato markdown.')"
+      git commit -m "$(git diff --cached | agy --dangerously-skip-permissions -p 'Analiza el diff de git y genera un mensaje de commit convencional corto, conciso y en una sola línea. Devuelve ÚNICAMENTE la línea del mensaje, sin explicaciones ni formato markdown.')"
     context: 'files'
     loadingText: 'Generando commit con IA (Antigravity)...'
     subprocess: true
@@ -186,7 +186,7 @@ customCommands:
   # Explicar los cambios del archivo seleccionado (staged y unstaged)
   - key: 'x'
     command: >
-      agy -p "Explica de forma concisa los cambios realizados en el archivo {{.SelectedFile.Name}}:\n\n$(git diff HEAD -- {{.SelectedFile.Name}})"
+      agy --dangerously-skip-permissions -p "Explica de forma concisa los cambios realizados en el archivo {{.SelectedFile.Name}}:\n\n$(git diff HEAD -- {{.SelectedFile.Name}})"
     context: 'files'
     loadingText: 'Explicando cambios del archivo con IA...'
     subprocess: true
@@ -195,7 +195,7 @@ customCommands:
   # Explicar los cambios y propósito del commit seleccionado
   - key: 'x'
     command: >
-      agy -p "Explica qué hace este commit y resume los cambios principales de forma concisa y directa:\n\n$(git show {{.SelectedLocalCommit.Hash}})"
+      agy --dangerously-skip-permissions -p "Explica qué hace este commit y resume los cambios principales de forma concisa y directa:\n\n$(git show {{.SelectedLocalCommit.Hash}})"
     context: 'commits'
     loadingText: 'Analizando commit con IA...'
     subprocess: true
@@ -204,7 +204,7 @@ customCommands:
   # Resumir todos los cambios de la rama seleccionada en comparación con main
   - key: 'x'
     command: >
-      agy -p "Resume los cambios realizados en la rama local '{{.SelectedLocalBranch.Name}}' en comparación con la rama principal (main):\n\n$(git diff main...{{.SelectedLocalBranch.Name}})"
+      agy --dangerously-skip-permissions -p "Resume los cambios realizados en la rama local '{{.SelectedLocalBranch.Name}}' en comparación con la rama principal (main):\n\n$(git diff main...{{.SelectedLocalBranch.Name}})"
     context: 'localBranches'
     loadingText: 'Resumiendo cambios de la rama con IA...'
     subprocess: true
