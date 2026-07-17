@@ -565,34 +565,34 @@ append_once 'alias ld="lazydocker"' "$ZSHRC"
 if ! grep -q "ia()" "$ZSHRC" 2>/dev/null; then
   cat <<'EOF' >> "$ZSHRC"
 
-# ia: Abre un mosaico de terminales (mosaico tmux) con Claude Code, Codex CLI y Antigravity CLI
+# ia: Abre un mosaico de terminales (mosaico tmux) con Codex (arriba izq), Antigravity (arriba der) y Claude Code (abajo)
 ia() {
   if [ -n "$TMUX" ]; then
-    # Ya estamos dentro de una sesión de tmux: creamos una nueva ventana y obtenemos el ID del primer panel
+    # Ya estamos dentro de una sesión de tmux: creamos una nueva ventana
     local p1=$(tmux new-window -n "AI-Mosaic" -P -F "#{pane_id}" 'zsh')
+    # Dividimos verticalmente para crear el panel inferior (Claude)
+    local p_bottom=$(tmux split-window -v -t "$p1" -P -F "#{pane_id}" 'zsh')
+    # Dividimos el panel superior horizontalmente para crear el panel superior derecho (Antigravity)
     local p2=$(tmux split-window -h -t "$p1" -P -F "#{pane_id}" 'zsh')
-    local p3=$(tmux split-window -h -t "$p2" -P -F "#{pane_id}" 'zsh')
-    tmux select-layout -t "$p1" even-horizontal
     
-    # Enviamos los comandos a cada ID de panel único (independiente de base-index o pane-base-index)
-    tmux send-keys -t "$p1" 'claude' C-m
-    tmux send-keys -t "$p2" 'codex' C-m
-    tmux send-keys -t "$p3" 'agy' C-m
-    tmux select-pane -t "$p1"
+    # Enviamos los comandos correspondientes
+    tmux send-keys -t "$p1" 'codex' C-m
+    tmux send-keys -t "$p2" 'agy' C-m
+    tmux send-keys -t "$p_bottom" 'claude' C-m
+    tmux select-pane -t "$p_bottom"
   else
     # Fuera de tmux: creamos una nueva sesión o nos reconectamos a una existente
     if tmux has-session -t ia 2>/dev/null; then
       tmux attach-session -t ia
     else
       local p1=$(tmux new-session -d -s ia -n "AI-Mosaic" -x "${COLUMNS:-200}" -y "${LINES:-50}" -P -F "#{pane_id}" 'zsh')
+      local p_bottom=$(tmux split-window -v -t "$p1" -P -F "#{pane_id}" 'zsh')
       local p2=$(tmux split-window -h -t "$p1" -P -F "#{pane_id}" 'zsh')
-      local p3=$(tmux split-window -h -t "$p2" -P -F "#{pane_id}" 'zsh')
-      tmux select-layout -t "$p1" even-horizontal
       
-      tmux send-keys -t "$p1" 'claude' C-m
-      tmux send-keys -t "$p2" 'codex' C-m
-      tmux send-keys -t "$p3" 'agy' C-m
-      tmux select-pane -t "$p1"
+      tmux send-keys -t "$p1" 'codex' C-m
+      tmux send-keys -t "$p2" 'agy' C-m
+      tmux send-keys -t "$p_bottom" 'claude' C-m
+      tmux select-pane -t "$p_bottom"
       
       tmux attach-session -t ia
     fi
