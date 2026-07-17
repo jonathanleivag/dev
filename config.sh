@@ -330,6 +330,12 @@ mouse-hide-while-typing = true
 # Keybind explícito de paste (texto). NO habilita pegado de imágenes —
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
 keybind = super+v=paste_from_clipboard
+
+# Vim-style split pane navigation
+keybind = super+alt+h = goto_split:left
+keybind = super+alt+j = goto_split:down
+keybind = super+alt+k = goto_split:up
+keybind = super+alt+l = goto_split:right
 EOF
 else
   cat > "$GHOSTTY_CONFIG_FILE" <<'EOF'
@@ -346,6 +352,12 @@ mouse-hide-while-typing = true
 # Keybind explícito de paste (texto). NO habilita pegado de imágenes —
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
 keybind = super+v=paste_from_clipboard
+
+# Vim-style split pane navigation
+keybind = super+alt+h = goto_split:left
+keybind = super+alt+j = goto_split:down
+keybind = super+alt+k = goto_split:up
+keybind = super+alt+l = goto_split:right
 EOF
   echo "  Config creada en $GHOSTTY_CONFIG_FILE"
 fi
