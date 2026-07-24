@@ -1058,6 +1058,142 @@ EOF
   echo "  (typescript, vue, astro, tailwind, json, prettier, eslint — Mason los instalará al abrir nvim por primera vez)"
 fi
 
+log "Configurando formateo respetando reglas del proyecto (Prettier / ESLint / .editorconfig)"
+if ! command -v eslint_d &>/dev/null; then
+  log "Instalando eslint_d globalmente para soporte de autofix ultra rápido con ESLint"
+  npm install -g eslint_d || warn "No se pudo instalar eslint_d globalmente, se omitió."
+fi
+
+FORMATTING_FILE="$NVIM_CONFIG/lua/plugins/formatting.lua"
+if [ -f "$FORMATTING_FILE" ]; then
+  warn "Ya existe $FORMATTING_FILE — no se sobreescribe para no perder tus ajustes."
+else
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+  cat > "$FORMATTING_FILE" <<'EOF'
+-- Configuración de formateo inteligente en guardado:
+-- Respetar las reglas de cada proyecto (.prettierrc, .eslintrc, eslint.config.js, .editorconfig)
+return {
+  -- 1. Configurar conform.nvim para usar Prettier y/o ESLint según los archivos reales del proyecto
+  {
+    "stevearc/conform.nvim",
+    opts = function(_, opts)
+      opts.formatters_by_ft = opts.formatters_by_ft or {}
+
+      local js_formatters = { "prettier", "eslint_d", stop_after_first = false }
+
+      opts.formatters_by_ft.javascript = js_formatters
+      opts.formatters_by_ft.javascriptreact = js_formatters
+      opts.formatters_by_ft.typescript = js_formatters
+      opts.formatters_by_ft.typescriptreact = js_formatters
+      opts.formatters_by_ft.vue = js_formatters
+      opts.formatters_by_ft.json = { "prettier" }
+      opts.formatters_by_ft.jsonc = { "prettier" }
+      opts.formatters_by_ft.html = { "prettier" }
+      opts.formatters_by_ft.css = { "prettier" }
+      opts.formatters_by_ft.scss = { "prettier" }
+      opts.formatters_by_ft.less = { "prettier" }
+      opts.formatters_by_ft.yaml = { "prettier" }
+      opts.formatters_by_ft.markdown = { "prettier" }
+
+      opts.default_format_opts = {
+        timeout_ms = 5000,
+        async = false,
+        quiet = false,
+        lsp_format = "fallback",
+      }
+
+      opts.formatters = opts.formatters or {}
+
+      -- Prettier SOLO se ejecuta si el proyecto tiene una configuración explícita de Prettier
+      opts.formatters.prettier = {
+        condition = function(self, ctx)
+          local has_prettier_file = vim.fs.find({
+            ".prettierrc",
+            ".prettierrc.json",
+            ".prettierrc.yml",
+            ".prettierrc.yaml",
+            ".prettierrc.json5",
+            ".prettierrc.js",
+            ".prettierrc.cjs",
+            ".prettierrc.mjs",
+            "prettier.config.js",
+            "prettier.config.cjs",
+            "prettier.config.mjs",
+          }, { path = ctx.filename, upward = true })[1] ~= nil
+
+          if has_prettier_file then
+            return true
+          end
+
+          -- Verificar si package.json contiene la propiedad "prettier"
+          local pkg_file = vim.fs.find({ "package.json" }, { path = ctx.filename, upward = true })[1]
+          if pkg_file then
+            local f = io.open(pkg_file, "r")
+            if f then
+              local content = f:read("*a")
+              f:close()
+              if content and content:find('"prettier"') then
+                return true
+              end
+            end
+          end
+
+          return false
+        end,
+      }
+
+      -- ESLint (vía eslint_d) solo se ejecuta si el proyecto tiene configuración de ESLint (.eslintrc* o eslint.config.*)
+      local eslint_condition = function(self, ctx)
+        return vim.fs.find({
+          ".eslintrc",
+          ".eslintrc.js",
+          ".eslintrc.cjs",
+          ".eslintrc.yaml",
+          ".eslintrc.yml",
+          ".eslintrc.json",
+          "eslint.config.js",
+          "eslint.config.mjs",
+          "eslint.config.cjs",
+          "eslint.config.ts",
+        }, { path = ctx.filename, upward = true })[1] ~= nil
+      end
+
+      opts.formatters.eslint_d = { condition = eslint_condition }
+
+      return opts
+    end,
+  },
+
+  -- 2. Desactivar formateo de vtsls/ts_ls para evitar que desconfigure las comillas/puntos y coma
+  {
+    "neovim/nvim-lspconfig",
+    opts = {
+      servers = {
+        vtsls = {
+          settings = {
+            typescript = { format = { enable = false } },
+            javascript = { format = { enable = false } },
+          },
+        },
+        ts_ls = {
+          settings = {
+            typescript = { format = { enable = false } },
+            javascript = { format = { enable = false } },
+          },
+        },
+        eslint = {
+          settings = {
+            workingDirectories = { mode = "auto" },
+          },
+        },
+      },
+    },
+  },
+}
+EOF
+  echo "  Configuración de formateo creada en $FORMATTING_FILE"
+fi
+
 log "Configurando dashboard de bienvenida (header personalizado)"
 DASHBOARD_FILE="$NVIM_CONFIG/lua/plugins/dashboard.lua"
 if [ -f "$DASHBOARD_FILE" ]; then
@@ -1118,6 +1254,50 @@ return {
 }
 EOF
   echo "  Configuración de transparencia creada en $THEME_FILE"
+fi
+
+log "Configurando minimapa en Neovim (~/.config/nvim/lua/plugins/minimap.lua)"
+MINIMAP_FILE="$NVIM_CONFIG/lua/plugins/minimap.lua"
+if [ -f "$MINIMAP_FILE" ]; then
+  warn "Ya existe $MINIMAP_FILE — no se sobreescribe para no perder tus ajustes."
+else
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+  cat > "$MINIMAP_FILE" <<'EOF'
+-- Minimapa estilo VS Code para Neovim / LazyVim (neominimap.nvim)
+-- Proporciona vista previa en miniatura, resaltado Treesitter, rectángulo de viewport y soporte de mouse
+return {
+  {
+    "Isrothy/neominimap.nvim",
+    version = "v3.*",
+    enabled = true,
+    lazy = false,
+    init = function()
+      vim.opt.wrap = false
+      vim.g.neominimap_config = {
+        auto_enable = true,
+        layout = "float",
+        float = {
+          minimap_width = 16,
+          window_border = "none",
+        },
+        click = {
+          enabled = true,
+        },
+        treesitter = {
+          enabled = true,
+        },
+      }
+    end,
+    keys = {
+      { "<leader>um", "<cmd>Neominimap toggle<cr>", desc = "Toggle Minimap (VS Code style)" },
+      { "<leader>mo", "<cmd>Neominimap on<cr>", desc = "Open Minimap" },
+      { "<leader>mc", "<cmd>Neominimap off<cr>", desc = "Close Minimap" },
+      { "<leader>mf", "<cmd>Neominimap focus<cr>", desc = "Focus Minimap" },
+    },
+  },
+}
+EOF
+  echo "  Configuración de minimapa creada en $MINIMAP_FILE"
 fi
 
 
