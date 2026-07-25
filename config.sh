@@ -175,12 +175,12 @@ mkdir -p "$LAZYGIT_CONFIG_DIR"
 cat > "$LAZYGIT_CONFIG_DIR/config.yml" <<'EOF'
 customCommands:
   # --- SECCIÓN DE ARCHIVOS (Files Panel) ---
-  # Generar commit automático con IA para los cambios staged
+  # Generar commit automático con IA en INGLÉS y revisar/confirmar antes de hacer commit
   - key: 'g'
     command: >
-      git commit -m "$(git diff --cached | agy --dangerously-skip-permissions -p 'Analiza el diff de git y genera un mensaje de commit convencional corto, conciso y en una sola línea. Devuelve ÚNICAMENTE la línea del mensaje, sin explicaciones ni formato markdown.')"
+      git commit -e -m "$(git diff --cached | agy --dangerously-skip-permissions -p 'Analyze the staged git diff and generate a concise Conventional Commit message in ENGLISH in a single line. Return ONLY the commit message text, with no quotes, explanations or markdown formatting.')"
     context: 'files'
-    loadingText: 'Generando commit con IA (Antigravity)...'
+    loadingText: 'Generating AI commit message in English...'
     subprocess: true
 
   # Explicar los cambios del archivo seleccionado (staged y unstaged)
