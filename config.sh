@@ -326,6 +326,10 @@ window-padding-x = 10
 window-padding-y = 10
 cursor-style = block
 mouse-hide-while-typing = true
+window-show-tab-bar = false
+
+# Mapear Cmd+T para abrir una ventana nueva en lugar de crear pestañas
+keybind = super+t=new_window
 
 # Keybind explícito de paste (texto). NO habilita pegado de imágenes —
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
@@ -346,6 +350,10 @@ window-padding-x = 10
 window-padding-y = 10
 cursor-style = block
 mouse-hide-while-typing = true
+window-show-tab-bar = false
+
+# Mapear Cmd+T para abrir una ventana nueva en lugar de crear pestañas
+keybind = super+t=new_window
 
 # Keybind explícito de paste (texto). NO habilita pegado de imágenes —
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
