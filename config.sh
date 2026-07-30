@@ -326,7 +326,7 @@ window-padding-x = 10
 window-padding-y = 10
 cursor-style = block
 mouse-hide-while-typing = true
-window-show-tab-bar = false
+window-show-tab-bar = never
 
 # Mapear Cmd+T para abrir una ventana nueva en lugar de crear pestañas
 keybind = super+t=new_window
@@ -350,7 +350,7 @@ window-padding-x = 10
 window-padding-y = 10
 cursor-style = block
 mouse-hide-while-typing = true
-window-show-tab-bar = false
+window-show-tab-bar = never
 
 # Mapear Cmd+T para abrir una ventana nueva en lugar de crear pestañas
 keybind = super+t=new_window
