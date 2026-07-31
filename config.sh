@@ -328,6 +328,9 @@ cursor-style = block
 mouse-hide-while-typing = true
 window-show-tab-bar = auto
 
+# Iniciar tmux automáticamente al abrir Ghostty
+command = /opt/homebrew/bin/tmux new-session -A -s main
+
 # Mapear Cmd+T para abrir una nueva pestaña
 keybind = super+t=new_tab
 
@@ -351,6 +354,9 @@ window-padding-y = 10
 cursor-style = block
 mouse-hide-while-typing = true
 window-show-tab-bar = auto
+
+# Iniciar tmux automáticamente al abrir Ghostty
+command = /opt/homebrew/bin/tmux new-session -A -s main
 
 # Mapear Cmd+T para abrir una nueva pestaña
 keybind = super+t=new_tab
@@ -1308,6 +1314,133 @@ EOF
   echo "  Configuración de minimapa creada en $MINIMAP_FILE"
 fi
 
+log "Configurando Workspaces (workspaces.nvim) en Neovim"
+WORKSPACES_FILE="$NVIM_CONFIG/lua/plugins/workspaces.lua"
+if [ -f "$WORKSPACES_FILE" ]; then
+  echo "  Workspaces OK, ya configurado en $WORKSPACES_FILE"
+else
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+  cat > "$WORKSPACES_FILE" <<'EOF'
+-- Gestión de Workspaces (Grupos de proyectos Backend + Frontend)
+-- Permite agrupar varios proyectos sin usar enlaces simbólicos ni romper la búsqueda
+return {
+  {
+    "natecraddock/workspaces.nvim",
+    opts = {
+      hooks = {
+        open = function(name, path)
+          pcall(function()
+            require("persistence").load()
+          end)
+        end,
+      },
+    },
+    keys = {
+      { "<leader>wo", "<cmd>WorkspacesOpen<cr>", desc = "Abrir Workspace (Grupo de proyectos)" },
+      { "<leader>wa", "<cmd>WorkspacesAdd<cr>", desc = "Agregar carpeta actual a Workspaces" },
+      { "<leader>wl", "<cmd>WorkspacesList<cr>", desc = "Listar Workspaces" },
+      { "<leader>wr", "<cmd>WorkspacesRemove<cr>", desc = "Eliminar Workspace" },
+    },
+  },
+}
+EOF
+  echo "  Configuración de Workspaces creada en $WORKSPACES_FILE"
+fi
+
+log "Configurando Multi-Project Group Workspace Manager en Neovim"
+GROUPS_JSON="$NVIM_CONFIG/project_groups.json"
+if [ ! -f "$GROUPS_JSON" ]; then
+  cat > "$GROUPS_JSON" <<'EOF'
+{
+  "Auth & User Stack": [
+    "/Users/jonathanleivag/Development/Movatec/front-movatec-hadda",
+    "/Users/jonathanleivag/Development/Movatec/backend/haddacloud-user-backend",
+    "/Users/jonathanleivag/Development/Movatec/mfe/haddacloud-mfe-auth"
+  ]
+}
+EOF
+fi
+
+MULTIROOT_FILE="$NVIM_CONFIG/lua/plugins/multiroot.lua"
+if [ -f "$MULTIROOT_FILE" ]; then
+  echo "  Multi-root OK, ya configurado en $MULTIROOT_FILE"
+else
+  mkdir -p "$NVIM_CONFIG/lua/plugins"
+  cat > "$MULTIROOT_FILE" <<'EOF'
+-- Multi-Project Group Workspace Manager para LazyVim
+return {
+  {
+    "folke/snacks.nvim",
+    opts = function(_, opts)
+      local config_path = vim.fn.stdpath("config") .. "/project_groups.json"
+
+      local function get_groups()
+        local f = io.open(config_path, "r")
+        if not f then return {} end
+        local content = f:read("*a")
+        f:close()
+        local ok, res = pcall(vim.json.decode, content)
+        return ok and res or {}
+      end
+
+      vim.g.active_project_dirs = vim.g.active_project_dirs or nil
+
+      vim.keymap.set("n", "<leader>wg", function()
+        local groups = get_groups()
+        local items = {}
+        for name, dirs in pairs(groups) do
+          table.insert(items, {
+            text = name .. " (" .. #dirs .. " proyectos)",
+            name = name,
+            dirs = dirs,
+          })
+        end
+
+        if #items == 0 then
+          vim.notify("No hay grupos de proyectos definidos en " .. config_path, vim.log.levels.WARN)
+          return
+        end
+
+        Snacks.picker.select(items, {
+          prompt = "Seleccionar Grupo de Proyectos (Workspace):",
+          format_item = function(item)
+            return item.text
+          end,
+        }, function(selected)
+          if selected then
+            vim.g.active_project_dirs = selected.dirs
+            for _, dir in ipairs(selected.dirs) do
+              pcall(function()
+                vim.lsp.buf.add_workspace_folder(dir)
+              end)
+            end
+            vim.notify("Grupo de proyectos activo: " .. selected.name .. "\nArchivos y Grep ahora buscarán en estas " .. #selected.dirs .. " carpetas.", vim.log.levels.INFO)
+          end
+        end)
+      end, { desc = "Seleccionar Grupo de Proyectos (Front + Back + MFE)" })
+
+      vim.keymap.set("n", "<leader>wf", function()
+        if vim.g.active_project_dirs and #vim.g.active_project_dirs > 0 then
+          Snacks.picker.files({ dirs = vim.g.active_project_dirs })
+        else
+          Snacks.picker.files()
+        end
+      end, { desc = "Buscar Archivos en el Grupo de Proyectos Activo" })
+
+      vim.keymap.set("n", "<leader>ws", function()
+        if vim.g.active_project_dirs and #vim.g.active_project_dirs > 0 then
+          Snacks.picker.grep({ dirs = vim.g.active_project_dirs })
+        else
+          Snacks.picker.grep()
+        end
+      end, { desc = "Grep Texto en el Grupo de Proyectos Activo" })
+    end,
+  },
+}
+EOF
+  echo "  Configuración Multi-root creada en $MULTIROOT_FILE"
+fi
+
 
 log "Configurando Kulala.nvim (REST Client para .http/.rest)"
 KULALA_FILE="$NVIM_CONFIG/lua/plugins/kulala.lua"
@@ -1443,9 +1576,11 @@ bind C-a send-prefix
 # Mouse: click para cambiar de panel, arrastrar para redimensionar, scroll para history
 set -g mouse on
 
-# Splits más intuitivos (mantienen el directorio actual)
+# Splits fáciles y cómodos (mantienen el directorio actual)
 unbind '"'
 unbind %
+bind v split-window -h -c "#{pane_current_path}"  # Ctrl+a + v -> Panel a la derecha
+bind s split-window -v -c "#{pane_current_path}"  # Ctrl+a + s -> Panel abajo
 bind | split-window -h -c "#{pane_current_path}"
 bind - split-window -v -c "#{pane_current_path}"
 
@@ -1477,6 +1612,11 @@ set -g pane-border-status top
 set -g pane-border-format " #[fg=cyan,bold] Panel #P #[fg=white,nobold]» #[fg=white,bold]#{b:pane_current_path} #[fg=green,dim](#{pane_current_command}) "
 set -g pane-active-border-style fg=cyan,bold
 set -g pane-border-style fg=colour240
+
+# Evitar truncado de texto en la barra de estado (permitir nombres largos)
+set -g status-left-length 100
+set -g status-right-length 100
+set -g status-right " #[fg=black,bold]#H #[fg=black,nobold]» %H:%M %d-%b-%Y "
 
 
 # Empezar a contar ventanas/paneles desde 1, no 0
