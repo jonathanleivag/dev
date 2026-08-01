@@ -8,7 +8,7 @@
 # zoxide/bat/eza + git config + pnpm/yarn + kubectl/k9s + Docker/lazydocker +
 # lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
 # prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
-# Claude Code + Codex CLI + Antigravity CLI
+# Claude Code + Antigravity CLI
 #
 # Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
 # nada existente. Es idempotente: puedes correrlo varias veces.
@@ -328,8 +328,8 @@ cursor-style = block
 mouse-hide-while-typing = true
 window-show-tab-bar = auto
 
-# Iniciar tmux automáticamente al abrir Ghostty
-command = /opt/homebrew/bin/tmux new-session -A -s main
+# Iniciar tmux independientemente por cada pestaña en Ghostty
+command = /opt/homebrew/bin/tmux
 
 # Mapear Cmd+T para abrir una nueva pestaña
 keybind = super+t=new_tab
@@ -355,8 +355,8 @@ cursor-style = block
 mouse-hide-while-typing = true
 window-show-tab-bar = auto
 
-# Iniciar tmux automáticamente al abrir Ghostty
-command = /opt/homebrew/bin/tmux new-session -A -s main
+# Iniciar tmux independientemente por cada pestaña en Ghostty
+command = /opt/homebrew/bin/tmux
 
 # Mapear Cmd+T para abrir una nueva pestaña
 keybind = super+t=new_tab
@@ -588,34 +588,29 @@ append_once 'alias ld="lazydocker"' "$ZSHRC"
 if ! grep -q "ia()" "$ZSHRC" 2>/dev/null; then
   cat <<'EOF' >> "$ZSHRC"
 
-# ia: Abre un mosaico de terminales (mosaico tmux) con Codex (arriba izq), Antigravity (arriba der) y Claude Code (abajo)
+# ia: Abre un mosaico de terminales (mosaico tmux) con Antigravity (arriba) y Claude Code (abajo)
 ia() {
   if [ -n "$TMUX" ]; then
     # Ya estamos dentro de una sesión de tmux: creamos una nueva ventana
     local p1=$(tmux new-window -n "AI-Mosaic" -P -F "#{pane_id}" 'zsh')
     # Dividimos verticalmente para crear el panel inferior (Claude)
-    local p_bottom=$(tmux split-window -v -t "$p1" -P -F "#{pane_id}" 'zsh')
-    # Dividimos el panel superior horizontalmente para crear el panel superior derecho (Antigravity)
-    local p2=$(tmux split-window -h -t "$p1" -P -F "#{pane_id}" 'zsh')
+    local p2=$(tmux split-window -v -t "$p1" -P -F "#{pane_id}" 'zsh')
     
     # Enviamos los comandos correspondientes
-    tmux send-keys -t "$p1" 'codex' C-m
-    tmux send-keys -t "$p2" 'agy' C-m
-    tmux send-keys -t "$p_bottom" 'claude' C-m
-    tmux select-pane -t "$p_bottom"
+    tmux send-keys -t "$p1" 'agy' C-m
+    tmux send-keys -t "$p2" 'claude' C-m
+    tmux select-pane -t "$p2"
   else
     # Fuera de tmux: creamos una nueva sesión o nos reconectamos a una existente
     if tmux has-session -t ia 2>/dev/null; then
       tmux attach-session -t ia
     else
       local p1=$(tmux new-session -d -s ia -n "AI-Mosaic" -x "${COLUMNS:-200}" -y "${LINES:-50}" -P -F "#{pane_id}" 'zsh')
-      local p_bottom=$(tmux split-window -v -t "$p1" -P -F "#{pane_id}" 'zsh')
-      local p2=$(tmux split-window -h -t "$p1" -P -F "#{pane_id}" 'zsh')
+      local p2=$(tmux split-window -v -t "$p1" -P -F "#{pane_id}" 'zsh')
       
-      tmux send-keys -t "$p1" 'codex' C-m
-      tmux send-keys -t "$p2" 'agy' C-m
-      tmux send-keys -t "$p_bottom" 'claude' C-m
-      tmux select-pane -t "$p_bottom"
+      tmux send-keys -t "$p1" 'agy' C-m
+      tmux send-keys -t "$p2" 'claude' C-m
+      tmux select-pane -t "$p2"
       
       tmux attach-session -t ia
     fi
@@ -1726,13 +1721,7 @@ else
   brew install --cask claude-code
 fi
 
-log "Verificando Codex CLI"
-if command -v codex &>/dev/null; then
-  echo "  Codex CLI OK, ya instalado"
-else
-  warn "Codex CLI no encontrado. Instalando..."
-  curl -fsSL https://chatgpt.com/codex/install.sh | sh
-fi
+
 
 log "Verificando Antigravity CLI"
 if brew list --cask antigravity-cli &>/dev/null; then
@@ -1758,7 +1747,7 @@ echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
-echo "  - Claude Code + Codex CLI + Antigravity CLI (asistentes de código con IA)"
+echo "  - Claude Code + Antigravity CLI (asistentes de código con IA)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
