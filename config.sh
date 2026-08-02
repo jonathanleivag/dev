@@ -1344,9 +1344,13 @@ fi
 
 log "Configurando Multi-Project Group Workspace Manager en Neovim"
 GROUPS_JSON="$NVIM_CONFIG/project_groups.json"
-if [ ! -f "$GROUPS_JSON" ]; then
-  cat > "$GROUPS_JSON" <<'EOF'
+cat > "$GROUPS_JSON" <<'EOF'
 {
+  "Front + Gateway + Global Form": [
+    "/Users/jonathanleivag/Development/Movatec/front-movatec-hadda",
+    "/Users/jonathanleivag/Development/Movatec/haddacloud-api-gateway-graphql",
+    "/Users/jonathanleivag/Development/Movatec/mfe/haddacloud-mfe-global-form"
+  ],
   "Auth & User Stack": [
     "/Users/jonathanleivag/Development/Movatec/front-movatec-hadda",
     "/Users/jonathanleivag/Development/Movatec/backend/haddacloud-user-backend",
@@ -1354,87 +1358,460 @@ if [ ! -f "$GROUPS_JSON" ]; then
   ]
 }
 EOF
-fi
+echo "  Configuración de Workspaces JSON creada en $GROUPS_JSON"
 
 MULTIROOT_FILE="$NVIM_CONFIG/lua/plugins/multiroot.lua"
-if [ -f "$MULTIROOT_FILE" ]; then
-  echo "  Multi-root OK, ya configurado en $MULTIROOT_FILE"
-else
-  mkdir -p "$NVIM_CONFIG/lua/plugins"
-  cat > "$MULTIROOT_FILE" <<'EOF'
--- Multi-Project Group Workspace Manager para LazyVim
+mkdir -p "$NVIM_CONFIG/lua/plugins"
+cat > "$MULTIROOT_FILE" <<'EOF'
+-- Multi-Root Workspace Manager para LazyVim (Estilo VSCode Multi-Root)
+-- Permite agrupar proyectos independientes (Frontend + Backends + MFEs)
+-- sin usar enlaces simbólicos y manteniendo búsqueda rápida, Explorer filtrado y soporte LSP.
+
+local M = {}
+local config_path = vim.fn.stdpath("config") .. "/project_groups.json"
+
+-- Leer grupos de workspaces desde JSON
+local function get_groups()
+  local f = io.open(config_path, "r")
+  if not f then return {} end
+  local content = f:read("*a")
+  f:close()
+  local ok, res = pcall(vim.json.decode, content)
+  return ok and res or {}
+end
+
+-- Guardar grupos en JSON
+local function save_groups(groups)
+  local f = io.open(config_path, "w")
+  if not f then
+    vim.notify("Error guardando " .. config_path, vim.log.levels.ERROR)
+    return false
+  end
+  f:write(vim.json.encode(groups))
+  f:close()
+  return true
+end
+
+-- Verificar si un directorio es un proyecto real (tiene .git, package.json, go.mod, etc.)
+local function is_real_project(dir)
+  if vim.fn.isdirectory(dir .. "/.git") == 1 then return true end
+  if vim.fn.filereadable(dir .. "/package.json") == 1 then return true end
+  if vim.fn.filereadable(dir .. "/go.mod") == 1 then return true end
+  if vim.fn.filereadable(dir .. "/Cargo.toml") == 1 then return true end
+  if vim.fn.filereadable(dir .. "/pyproject.toml") == 1 then return true end
+  if vim.fn.filereadable(dir .. "/requirements.txt") == 1 then return true end
+  return false
+end
+
+-- Calcular directorio raíz común para un grupo de carpetas
+local function get_common_cwd(dirs)
+  if not dirs or #dirs == 0 then return nil end
+  if #dirs == 1 then return dirs[1] end
+
+  local split_paths = {}
+  for _, d in ipairs(dirs) do
+    table.insert(split_paths, vim.split(d, "/", { plain = true }))
+  end
+
+  local common = {}
+  local first = split_paths[1]
+  for i = 1, #first do
+    local part = first[i]
+    local match = true
+    for j = 2, #split_paths do
+      if split_paths[j][i] ~= part then
+        match = false
+        break
+      end
+    end
+    if match then
+      table.insert(common, part)
+    else
+      break
+    end
+  end
+
+  local res = table.concat(common, "/")
+  if res == "" then return "/" end
+  return res
+end
+
+-- Verificar si un path está permitido en el workspace
+local function is_path_allowed(path, dirs)
+  path = path:gsub("/$", "")
+  for _, d in ipairs(dirs) do
+    d = d:gsub("/$", "")
+    if path == d or path:sub(1, #d + 1) == d .. "/" then
+      return true
+    end
+    if d:sub(1, #path + 1) == path .. "/" then
+      return true
+    end
+  end
+  return false
+end
+
+-- Generar lista de exclusión dinámica para ocultar todo lo que no pertenece al workspace
+local function get_workspace_excludes(common_dir, dirs)
+  if not common_dir or not dirs or #dirs == 0 then return {} end
+  local excludes = {}
+
+  local function scan(dir, depth)
+    if depth > 4 then return end
+    local entries = vim.fn.readdir(dir)
+    if not entries then return end
+
+    for _, entry in ipairs(entries) do
+      local full_path = dir .. "/" .. entry
+      if not is_path_allowed(full_path, dirs) then
+        local rel = full_path:sub(#common_dir + 2)
+        table.insert(excludes, rel)
+        table.insert(excludes, rel .. "/**")
+      else
+        local is_exact_target = false
+        for _, d in ipairs(dirs) do
+          d = d:gsub("/$", "")
+          if full_path == d or full_path:sub(1, #d + 1) == d .. "/" then
+            is_exact_target = true
+            break
+          end
+        end
+        if not is_exact_target and vim.fn.isdirectory(full_path) == 1 then
+          scan(full_path, depth + 1)
+        end
+      end
+    end
+  end
+
+  scan(common_dir, 1)
+  return excludes
+end
+
+function M.open_workspace_explorer()
+  if not vim.g.active_workspace_dirs or #vim.g.active_workspace_dirs == 0 then
+    Snacks.explorer()
+    return
+  end
+
+  local common_dir = get_common_cwd(vim.g.active_workspace_dirs)
+  local excludes = get_workspace_excludes(common_dir, vim.g.active_workspace_dirs)
+
+  Snacks.explorer({
+    cwd = common_dir,
+    exclude = excludes,
+    title = "Explorer Workspace (" .. vim.g.active_workspace_name .. ")",
+  })
+end
+
+function M.activate_workspace(name, dirs)
+  vim.g.active_workspace_name = name
+  vim.g.active_workspace_dirs = dirs
+
+  for _, dir in ipairs(dirs) do
+    pcall(function()
+      vim.lsp.buf.add_workspace_folder(dir)
+    end)
+  end
+
+  local common_dir = get_common_cwd(dirs)
+  if common_dir and vim.fn.isdirectory(common_dir) == 1 then
+    pcall(function()
+      vim.cmd("cd " .. vim.fn.fnameescape(common_dir))
+    end)
+  end
+
+  pcall(M.open_workspace_explorer)
+
+  local msg = "Workspace activo: " .. name .. "\nCarpetas (" .. #dirs .. "):\n • " .. table.concat(dirs, "\n • ")
+  vim.notify(msg, vim.log.levels.INFO, { title = "Multi-Root Workspace" })
+end
+
+function M.select_workspace()
+  local groups = get_groups()
+  local items = {}
+  for name, dirs in pairs(groups) do
+    table.insert(items, {
+      text = "📁 " .. name .. " (" .. #dirs .. " proyectos)",
+      name = name,
+      dirs = dirs,
+    })
+  end
+
+  if #items == 0 then
+    vim.notify("No hay workspaces definidos en " .. config_path, vim.log.levels.WARN)
+    return
+  end
+
+  Snacks.picker.select(items, {
+    prompt = "Seleccionar Workspace (Grupo Multi-Root):",
+    format_item = function(item)
+      return item.text
+    end,
+  }, function(selected)
+    if selected then
+      M.activate_workspace(selected.name, selected.dirs)
+    end
+  end)
+end
+
+function M.deactivate_workspace()
+  vim.g.active_workspace_name = nil
+  vim.g.active_workspace_dirs = nil
+  pcall(function()
+    Snacks.explorer()
+  end)
+  vim.notify("Workspace desactivado. Búsqueda y Explorer restablecidos.", vim.log.levels.INFO, { title = "Multi-Root Workspace" })
+end
+
+function M.remove_workspace()
+  local groups = get_groups()
+  local items = {}
+  for name, dirs in pairs(groups) do
+    table.insert(items, {
+      text = "🗑️ " .. name .. " (" .. #dirs .. " proyectos)",
+      name = name,
+    })
+  end
+
+  if #items == 0 then
+    vim.notify("No hay workspaces para eliminar.", vim.log.levels.WARN)
+    return
+  end
+
+  Snacks.picker.select(items, {
+    prompt = "Seleccionar Workspace a Eliminar:",
+    format_item = function(item)
+      return item.text
+    end,
+  }, function(selected)
+    if selected then
+      groups[selected.name] = nil
+      save_groups(groups)
+
+      if vim.g.active_workspace_name == selected.name then
+        vim.g.active_workspace_name = nil
+        vim.g.active_workspace_dirs = nil
+        pcall(function() Snacks.explorer() end)
+      end
+
+      vim.notify("Workspace '" .. selected.name .. "' eliminado correctamente.", vim.log.levels.INFO)
+    end
+  end)
+end
+
+function M.create_workspace()
+  vim.ui.input({ prompt = "Nombre del nuevo Workspace: " }, function(name)
+    if not name or name:gsub("%s+", "") == "" then
+      vim.notify("Creación de workspace cancelada.", vim.log.levels.WARN)
+      return
+    end
+
+    local base_dir = "/Users/jonathanleivag/Development"
+    local found_projects = {}
+
+    local handle = io.popen("find " .. base_dir .. " -mindepth 1 -maxdepth 4 -type d \\( ! -name '.*' ! -name 'node_modules' ! -name 'dist' ! -name 'target' ! -name 'build' \\)")
+    if handle then
+      for line in handle:lines() do
+        if is_real_project(line) then
+          table.insert(found_projects, line)
+        end
+      end
+      handle:close()
+    end
+    table.sort(found_projects)
+
+    if #found_projects == 0 then
+      vim.notify("No se encontraron proyectos válidos en " .. base_dir, vim.log.levels.ERROR)
+      return
+    end
+
+    local selected_dirs = {}
+    local function pick_folder()
+      local items = { { text = "✅ [FINALIZAR Y CREAR WORKSPACE]", finish = true } }
+      for _, p in ipairs(found_projects) do
+        local rel = p:sub(#base_dir + 2)
+        local already = false
+        for _, s in ipairs(selected_dirs) do
+          if s == p then already = true; break end
+        end
+        if not already then
+          table.insert(items, { text = "📁 " .. rel, path = p })
+        end
+      end
+
+      Snacks.picker.select(items, {
+        prompt = "Seleccionar proyectos para '" .. name .. "' (Seleccionados: " .. #selected_dirs .. "):",
+        format_item = function(item) return item.text end,
+      }, function(selected)
+        if not selected or selected.finish then
+          if #selected_dirs == 0 then
+            vim.notify("No agregaste ningún proyecto. Cancelado.", vim.log.levels.WARN)
+            return
+          end
+          local groups = get_groups()
+          groups[name] = selected_dirs
+          save_groups(groups)
+          M.activate_workspace(name, selected_dirs)
+          vim.notify("Workspace '" .. name .. "' creado y activado con " .. #selected_dirs .. " proyectos.", vim.log.levels.INFO)
+        else
+          table.insert(selected_dirs, selected.path)
+          pick_folder()
+        end
+      end)
+    end
+
+    pick_folder()
+  end)
+end
+
+function M.copy_workspace_or_config_path()
+  if vim.g.active_workspace_dirs and #vim.g.active_workspace_dirs > 0 then
+    local paths_str = table.concat(vim.g.active_workspace_dirs, "\n")
+    vim.fn.setreg("+", paths_str)
+    vim.fn.setreg('"', paths_str)
+
+    local msg = "📋 Rutas del Workspace '" .. (vim.g.active_workspace_name or "Activo") .. "' copiadas al portapapeles:\n • " .. table.concat(vim.g.active_workspace_dirs, "\n • ")
+    vim.notify(msg, vim.log.levels.INFO, { title = "Multi-Root Workspace" })
+  else
+    vim.fn.setreg("+", config_path)
+    vim.fn.setreg('"', config_path)
+
+    local msg = "📋 Sin workspace activo. Ruta del JSON de configuración copiada:\n" .. config_path
+    vim.notify(msg, vim.log.levels.INFO, { title = "Multi-Root Workspace" })
+  end
+end
+
+function M.add_current_dir()
+  if not vim.g.active_workspace_name or not vim.g.active_workspace_dirs then
+    vim.notify("Primero activa un workspace con <leader>ws para agregarle carpetas.", vim.log.levels.WARN)
+    return
+  end
+
+  local current_dir = vim.fn.getcwd()
+  for _, d in ipairs(vim.g.active_workspace_dirs) do
+    if d == current_dir then
+      vim.notify("La carpeta actual ya pertenece a este workspace.", vim.log.levels.INFO)
+      return
+    end
+  end
+
+  table.insert(vim.g.active_workspace_dirs, current_dir)
+  local groups = get_groups()
+  groups[vim.g.active_workspace_name] = vim.g.active_workspace_dirs
+  save_groups(groups)
+  M.activate_workspace(vim.g.active_workspace_name, vim.g.active_workspace_dirs)
+end
+
+function M.edit_json()
+  vim.cmd("edit " .. config_path)
+end
+
 return {
   {
     "folke/snacks.nvim",
+    keys = {
+      { "<leader>ws", M.select_workspace, desc = "Seleccionar Workspace" },
+      { "<leader>wn", M.create_workspace, desc = "Crear nuevo Workspace" },
+      { "<leader>wd", M.deactivate_workspace, desc = "Desactivar Workspace" },
+      { "<leader>wr", M.remove_workspace, desc = "Eliminar Workspace" },
+      { "<leader>wy", M.copy_workspace_or_config_path, desc = "Copiar rutas de Workspace / JSON al portapapeles" },
+      { "<leader>yp", M.copy_workspace_or_config_path, desc = "Copiar rutas de Workspace / JSON al portapapeles" },
+      { "<leader>wa", M.add_current_dir, desc = "Agregar carpeta actual a Workspace" },
+      { "<leader>we", M.edit_json, desc = "Editar JSON de Workspaces" },
+      { "<leader>Ws", M.select_workspace, desc = "Seleccionar Workspace" },
+      { "<leader>Wn", M.create_workspace, desc = "Crear nuevo Workspace" },
+      { "<leader>Wd", M.deactivate_workspace, desc = "Desactivar Workspace" },
+      { "<leader>Wr", M.remove_workspace, desc = "Eliminar Workspace" },
+      { "<leader>Wy", M.copy_workspace_or_config_path, desc = "Copiar rutas de Workspace / JSON al portapapeles" },
+      { "<leader>Wa", M.add_current_dir, desc = "Agregar carpeta actual a Workspace" },
+      { "<leader>We", M.edit_json, desc = "Editar JSON de Workspaces" },
+    },
     opts = function(_, opts)
-      local config_path = vim.fn.stdpath("config") .. "/project_groups.json"
-
-      local function get_groups()
-        local f = io.open(config_path, "r")
-        if not f then return {} end
-        local content = f:read("*a")
-        f:close()
-        local ok, res = pcall(vim.json.decode, content)
-        return ok and res or {}
-      end
-
-      vim.g.active_project_dirs = vim.g.active_project_dirs or nil
-
-      vim.keymap.set("n", "<leader>wg", function()
-        local groups = get_groups()
-        local items = {}
-        for name, dirs in pairs(groups) do
-          table.insert(items, {
-            text = name .. " (" .. #dirs .. " proyectos)",
-            name = name,
-            dirs = dirs,
+      -- Intercept Búsqueda de Archivos
+      vim.keymap.set("n", "<leader><space>", function()
+        if vim.g.active_workspace_dirs and #vim.g.active_workspace_dirs > 0 then
+          Snacks.picker.files({
+            dirs = vim.g.active_workspace_dirs,
+            title = "Archivos Workspace (" .. vim.g.active_workspace_name .. ")",
           })
+        else
+          Snacks.picker.smart()
         end
+      end, { desc = "Buscar Archivos (Workspace o Local)" })
 
-        if #items == 0 then
-          vim.notify("No hay grupos de proyectos definidos en " .. config_path, vim.log.levels.WARN)
-          return
-        end
-
-        Snacks.picker.select(items, {
-          prompt = "Seleccionar Grupo de Proyectos (Workspace):",
-          format_item = function(item)
-            return item.text
-          end,
-        }, function(selected)
-          if selected then
-            vim.g.active_project_dirs = selected.dirs
-            for _, dir in ipairs(selected.dirs) do
-              pcall(function()
-                vim.lsp.buf.add_workspace_folder(dir)
-              end)
-            end
-            vim.notify("Grupo de proyectos activo: " .. selected.name .. "\nArchivos y Grep ahora buscarán en estas " .. #selected.dirs .. " carpetas.", vim.log.levels.INFO)
-          end
-        end)
-      end, { desc = "Seleccionar Grupo de Proyectos (Front + Back + MFE)" })
-
-      vim.keymap.set("n", "<leader>wf", function()
-        if vim.g.active_project_dirs and #vim.g.active_project_dirs > 0 then
-          Snacks.picker.files({ dirs = vim.g.active_project_dirs })
+      vim.keymap.set("n", "<leader>ff", function()
+        if vim.g.active_workspace_dirs and #vim.g.active_workspace_dirs > 0 then
+          Snacks.picker.files({
+            dirs = vim.g.active_workspace_dirs,
+            title = "Archivos Workspace (" .. vim.g.active_workspace_name .. ")",
+          })
         else
           Snacks.picker.files()
         end
-      end, { desc = "Buscar Archivos en el Grupo de Proyectos Activo" })
+      end, { desc = "Buscar Archivos (Workspace o Local)" })
 
-      vim.keymap.set("n", "<leader>ws", function()
-        if vim.g.active_project_dirs and #vim.g.active_project_dirs > 0 then
-          Snacks.picker.grep({ dirs = vim.g.active_project_dirs })
+      -- Intercept Grep Texto
+      vim.keymap.set("n", "<leader>/", function()
+        if vim.g.active_workspace_dirs and #vim.g.active_workspace_dirs > 0 then
+          Snacks.picker.grep({
+            dirs = vim.g.active_workspace_dirs,
+            title = "Grep Workspace (" .. vim.g.active_workspace_name .. ")",
+          })
         else
           Snacks.picker.grep()
         end
-      end, { desc = "Grep Texto en el Grupo de Proyectos Activo" })
+      end, { desc = "Grep Texto (Workspace o Local)" })
+
+      vim.keymap.set("n", "<leader>sg", function()
+        if vim.g.active_workspace_dirs and #vim.g.active_workspace_dirs > 0 then
+          Snacks.picker.grep({
+            dirs = vim.g.active_workspace_dirs,
+            title = "Grep Workspace (" .. vim.g.active_workspace_name .. ")",
+          })
+        else
+          Snacks.picker.grep()
+        end
+      end, { desc = "Grep Texto (Workspace o Local)" })
+
+      -- Intercept Explorer
+      vim.keymap.set("n", "<leader>e", M.open_workspace_explorer, { desc = "Explorer (Workspace o Local)" })
+      vim.keymap.set("n", "<leader>fe", M.open_workspace_explorer, { desc = "Explorer (Workspace o Local)" })
     end,
   },
 }
 EOF
-  echo "  Configuración Multi-root creada en $MULTIROOT_FILE"
-fi
+echo "  Configuración Multi-root creada en $MULTIROOT_FILE"
+
+LUALINE_FILE="$NVIM_CONFIG/lua/plugins/lualine.lua"
+cat > "$LUALINE_FILE" <<'EOF'
+-- Indicador de Workspace Activo en Lualine
+return {
+  {
+    "nvim-lualine/lualine.nvim",
+    opts = function(_, opts)
+      opts.sections = opts.sections or {}
+      opts.sections.lualine_x = opts.sections.lualine_x or {}
+      table.insert(opts.sections.lualine_x, 1, {
+        function()
+          if vim.g.active_workspace_name then
+            local count = #(vim.g.active_workspace_dirs or {})
+            return "📁 [" .. vim.g.active_workspace_name .. " (" .. count .. ")]"
+          end
+          return ""
+        end,
+        color = { fg = "#7aa2f7", gui = "bold" },
+      })
+    end,
+  },
+}
+EOF
+echo "  Configuración Lualine Workspace creada en $LUALINE_FILE"
+
+WORKSPACES_FILE="$NVIM_CONFIG/lua/plugins/workspaces.lua"
+cat > "$WORKSPACES_FILE" <<'EOF'
+-- Reemplazado por multiroot.lua
+return {}
+EOF
 
 
 log "Configurando Kulala.nvim (REST Client para .http/.rest)"
