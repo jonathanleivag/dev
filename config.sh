@@ -1667,6 +1667,172 @@ function M.create_workspace()
   end)
 end
 
+function M.add_project_to_workspace()
+  local groups = get_groups()
+  local group_names = {}
+  for name, _ in pairs(groups) do
+    table.insert(group_names, name)
+  end
+  table.sort(group_names)
+
+  if #group_names == 0 then
+    vim.notify("No hay workspaces creados aún. Usa <leader>wn para crear uno.", vim.log.levels.WARN)
+    return
+  end
+
+  local function select_project_for_group(target_group_name)
+    local base_dir = "/Users/jonathanleivag/Development"
+    local found_projects = {}
+
+    local handle = io.popen("find " .. base_dir .. " -mindepth 1 -maxdepth 4 -type d \\( ! -name '.*' ! -name 'node_modules' ! -name 'dist' ! -name 'target' ! -name 'build' \\)")
+    if handle then
+      for line in handle:lines() do
+        if is_real_project(line) then
+          table.insert(found_projects, line)
+        end
+      end
+      handle:close()
+    end
+    table.sort(found_projects)
+
+    local current_dirs = groups[target_group_name] or {}
+    local items = {}
+    for _, p in ipairs(found_projects) do
+      local already = false
+      for _, existing in ipairs(current_dirs) do
+        if existing == p then already = true; break end
+      end
+      if not already then
+        local rel = p:sub(#base_dir + 2)
+        table.insert(items, { text = "📁 " .. rel, path = p })
+      end
+    end
+
+    if #items == 0 then
+      vim.notify("Todos los proyectos de " .. base_dir .. " ya pertenecen a este workspace.", vim.log.levels.INFO)
+      return
+    end
+
+    Snacks.picker.select(items, {
+      prompt = "Seleccionar proyecto para agregar a '" .. target_group_name .. "':",
+      format_item = function(item) return item.text end,
+    }, function(selected)
+      if selected and selected.path then
+        table.insert(groups[target_group_name], selected.path)
+        save_groups(groups)
+
+        if vim.g.active_workspace_name == target_group_name then
+          M.activate_workspace(target_group_name, groups[target_group_name])
+        else
+          M.activate_workspace(target_group_name, groups[target_group_name])
+        end
+
+        vim.notify("Proyecto '" .. selected.path .. "' agregado a '" .. target_group_name .. "'.", vim.log.levels.INFO)
+      end
+    end)
+  end
+
+  if vim.g.active_workspace_name and groups[vim.g.active_workspace_name] then
+    select_project_for_group(vim.g.active_workspace_name)
+  else
+    local items = {}
+    for _, name in ipairs(group_names) do
+      table.insert(items, { text = "📁 " .. name .. " (" .. #groups[name] .. " proyectos)", name = name })
+    end
+
+    Snacks.picker.select(items, {
+      prompt = "Seleccionar Workspace al que deseas agregar un proyecto:",
+      format_item = function(item) return item.text end,
+    }, function(selected)
+      if selected then
+        select_project_for_group(selected.name)
+      end
+    end)
+  end
+end
+
+function M.remove_project_from_workspace_target(target_group_name)
+  local groups = get_groups()
+  local current_dirs = groups[target_group_name] or {}
+
+  if #current_dirs == 0 then
+    vim.notify("El workspace '" .. target_group_name .. "' no tiene proyectos.", vim.log.levels.WARN)
+    return
+  end
+
+  local base_dir = "/Users/jonathanleivag/Development"
+  local items = {}
+  for _, p in ipairs(current_dirs) do
+    local rel = p
+    if p:sub(1, #base_dir) == base_dir then
+      rel = p:sub(#base_dir + 2)
+    end
+    table.insert(items, { text = "❌ " .. rel, path = p })
+  end
+
+  Snacks.picker.select(items, {
+    prompt = "Quitar proyecto de '" .. target_group_name .. "':",
+    format_item = function(item) return item.text end,
+  }, function(selected)
+    if selected and selected.path then
+      local new_dirs = {}
+      for _, p in ipairs(current_dirs) do
+        if p ~= selected.path then
+          table.insert(new_dirs, p)
+        end
+      end
+
+      groups[target_group_name] = new_dirs
+      save_groups(groups)
+
+      if vim.g.active_workspace_name == target_group_name then
+        if #new_dirs == 0 then
+          M.deactivate_workspace()
+        else
+          M.activate_workspace(target_group_name, new_dirs)
+        end
+      end
+
+      vim.notify("Proyecto '" .. selected.path .. "' quitado del workspace '" .. target_group_name .. "'.", vim.log.levels.INFO)
+    end
+  end)
+end
+
+function M.remove_project_from_workspace()
+  local groups = get_groups()
+  local target_group_name = vim.g.active_workspace_name
+
+  if not target_group_name or not groups[target_group_name] then
+    local group_names = {}
+    for name, _ in pairs(groups) do
+      table.insert(group_names, name)
+    end
+    table.sort(group_names)
+
+    if #group_names == 0 then
+      vim.notify("No hay workspaces creados.", vim.log.levels.WARN)
+      return
+    end
+
+    local items = {}
+    for _, name in ipairs(group_names) do
+      table.insert(items, { text = "📁 " .. name .. " (" .. #groups[name] .. " proyectos)", name = name })
+    end
+
+    Snacks.picker.select(items, {
+      prompt = "Seleccionar Workspace del cual quitar un proyecto:",
+      format_item = function(item) return item.text end,
+    }, function(selected)
+      if selected then
+        M.remove_project_from_workspace_target(selected.name)
+      end
+    end)
+    return
+  end
+
+  M.remove_project_from_workspace_target(target_group_name)
+end
+
 function M.copy_workspace_or_config_path()
   if vim.g.active_workspace_dirs and #vim.g.active_workspace_dirs > 0 then
     local paths_str = table.concat(vim.g.active_workspace_dirs, "\n")
@@ -1715,16 +1881,20 @@ return {
     keys = {
       { "<leader>ws", M.select_workspace, desc = "Seleccionar Workspace" },
       { "<leader>wn", M.create_workspace, desc = "Crear nuevo Workspace" },
+      { "<leader>wp", M.add_project_to_workspace, desc = "Agregar proyecto a Workspace" },
+      { "<leader>wx", M.remove_project_from_workspace, desc = "Quitar proyecto de Workspace" },
       { "<leader>wd", M.deactivate_workspace, desc = "Desactivar Workspace" },
-      { "<leader>wr", M.remove_workspace, desc = "Eliminar Workspace" },
+      { "<leader>wr", M.remove_workspace, desc = "Eliminar Workspace completo" },
       { "<leader>wy", M.copy_workspace_or_config_path, desc = "Copiar rutas de Workspace / JSON al portapapeles" },
       { "<leader>yp", M.copy_workspace_or_config_path, desc = "Copiar rutas de Workspace / JSON al portapapeles" },
       { "<leader>wa", M.add_current_dir, desc = "Agregar carpeta actual a Workspace" },
       { "<leader>we", M.edit_json, desc = "Editar JSON de Workspaces" },
       { "<leader>Ws", M.select_workspace, desc = "Seleccionar Workspace" },
       { "<leader>Wn", M.create_workspace, desc = "Crear nuevo Workspace" },
+      { "<leader>Wp", M.add_project_to_workspace, desc = "Agregar proyecto a Workspace" },
+      { "<leader>Wx", M.remove_project_from_workspace, desc = "Quitar proyecto de Workspace" },
       { "<leader>Wd", M.deactivate_workspace, desc = "Desactivar Workspace" },
-      { "<leader>Wr", M.remove_workspace, desc = "Eliminar Workspace" },
+      { "<leader>Wr", M.remove_workspace, desc = "Eliminar Workspace completo" },
       { "<leader>Wy", M.copy_workspace_or_config_path, desc = "Copiar rutas de Workspace / JSON al portapapeles" },
       { "<leader>Wa", M.add_current_dir, desc = "Agregar carpeta actual a Workspace" },
       { "<leader>We", M.edit_json, desc = "Editar JSON de Workspaces" },
