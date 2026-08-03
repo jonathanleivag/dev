@@ -1465,8 +1465,8 @@ local function get_workspace_excludes(common_dir, dirs)
       local full_path = dir .. "/" .. entry
       if not is_path_allowed(full_path, dirs) then
         local rel = full_path:sub(#common_dir + 2)
-        table.insert(excludes, rel)
-        table.insert(excludes, rel .. "/**")
+        table.insert(excludes, "/" .. rel)
+        table.insert(excludes, "/" .. rel .. "/**")
       else
         local is_exact_target = false
         for _, d in ipairs(dirs) do
