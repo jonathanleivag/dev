@@ -2023,57 +2023,85 @@ mkdir -p "$HOME/go/bin"
 cat > "$HOME/go/bin/tmux-mosaic" <<'EOF'
 #!/usr/bin/env bash
 #
-# tmux-mosaic
+# tmux-mosaic (tm / tmm / tmx)
 #
-# Abre todas las subcarpetas (proyectos) de un directorio como paneles (splits)
-# en un mosaico perfectamente ordenado utilizando tmux.
+# Crea un mosaico (grid/tiled layout) en Tmux con todas las rutas de proyectos especificadas.
 #
-# Uso:
-#   tmux-mosaic [/ruta/a/la/carpeta]
+# Formas de uso:
+#   1. Argumentos directos: tm /ruta/1 /ruta/2 /ruta/3
+#   2. Desde portapapeles: Copia con <leader>wy en LazyVim y ejecuta simplemente: tm
+#   3. Desde pipe: echo "/ruta/1\n/ruta/2" | tm
 #
 
 set -euo pipefail
 
-# Directorio base (por defecto el directorio actual)
-TARGET_DIR="${1:-.}"
-TARGET_DIR="$(cd "$TARGET_DIR" && pwd)"
+paths=()
 
-# Obtener subcarpetas
-directories=()
-while IFS= read -r -d '' dir; do
-  directories+=("$dir")
-done < <(find -L "$TARGET_DIR" -maxdepth 1 -mindepth 1 -type d -print0 | sort -z)
+# 1. Si hay argumentos pasados en la terminal
+if [ $# -gt 0 ]; then
+  for p in "$@"; do
+    p="$(echo "$p" | xargs)"
+    if [ -n "$p" ] && [ -d "$p" ]; then
+      paths+=("$p")
+    fi
+  done
+# 2. Si se están pasando datos por tubería (pipe / stdin)
+elif [ ! -t 0 ]; then
+  while IFS= read -r line; do
+    line="$(echo "$line" | xargs)"
+    if [ -n "$line" ] && [ -d "$line" ]; then
+      paths+=("$line")
+    fi
+  done
+# 3. Si no hay argumentos ni pipe, leer del portapapeles de macOS (pbpaste)
+else
+  clip="$(pbpaste 2>/dev/null || true)"
+  if [ -n "$clip" ]; then
+    while IFS= read -r line; do
+      line="$(echo "$line" | xargs)"
+      if [ -n "$line" ] && [ -d "$line" ]; then
+        paths+=("$line")
+      fi
+    done <<< "$clip"
+  fi
+fi
 
-if [ ${#directories[@]} -eq 0 ]; then
-  echo "No se encontraron subcarpetas (proyectos) en: $TARGET_DIR"
+if [ ${#paths[@]} -eq 0 ]; then
+  echo -e "\033[1;31m❌ Error: No se encontraron rutas válidas de proyectos.\033[0m"
+  echo -e "Formas de uso:"
+  echo -e "  1. Pasa las rutas como argumentos: \033[1;36mtm /ruta/1 /ruta/2 /ruta/3\033[0m"
+  echo -e "  2. O copia las rutas con \033[1;33m<leader>wy\033[0m en LazyVim y ejecuta simplemente: \033[1;36mtm\033[0m"
   exit 1
 fi
 
-SESSION_NAME="mosaico-$(basename "$TARGET_DIR" | tr '.' '-')"
+count=${#paths[@]}
+echo -e "\033[1;32m🚀 Creando mosaico Tmux para ${count} proyecto(s)...\033[0m"
 
-# Matar sesión si ya existe una con el mismo nombre para evitar conflictos
-if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-  tmux kill-session -t "$SESSION_NAME"
+if [ -n "${TMUX:-}" ]; then
+  # Dentro de una sesión activa de Tmux: crear una nueva ventana "Mosaico"
+  win_id="$(tmux new-window -P -n "Mosaico" -c "${paths[0]}")"
+
+  for (( i=1; i<count; i++ )); do
+    tmux split-window -t "$win_id" -c "${paths[$i]}"
+    tmux select-layout -t "$win_id" tiled
+  done
+
+  tmux select-layout -t "$win_id" tiled
+  tmux select-pane -t "$win_id.0"
+else
+  # Fuera de Tmux: crear una nueva sesión y conectarse
+  session_name="mosaic_$(date +%s)"
+  tmux new-session -d -s "$session_name" -n "Mosaico" -c "${paths[0]}"
+
+  for (( i=1; i<count; i++ )); do
+    tmux split-window -t "$session_name:Mosaico" -c "${paths[$i]}"
+    tmux select-layout -t "$session_name:Mosaico" tiled
+  done
+
+  tmux select-layout -t "$session_name:Mosaico" tiled
+  tmux select-pane -t "$session_name:Mosaico.0"
+  tmux attach-session -t "$session_name"
 fi
-
-# Iniciar la sesión de tmux en segundo plano con la primera carpeta
-cd "${directories[0]}"
-tmux new-session -d -s "$SESSION_NAME"
-
-# Crear un panel (split) para cada una de las carpetas restantes
-for ((i=1; i<${#directories[@]}; i++)); do
-  dir="${directories[i]}"
-  # Crear split horizontal en el directorio correspondiente
-  tmux split-window -t "$SESSION_NAME" -c "$dir"
-  # Reordenar automáticamente los paneles como mosaico (grid)
-  tmux select-layout -t "$SESSION_NAME" tiled
-done
-
-# Balancear el mosaico final por si acaso
-tmux select-layout -t "$SESSION_NAME" tiled
-
-# Acoplarse a la sesión de tmux
-tmux attach-session -t "$SESSION_NAME"
 EOF
 chmod +x "$HOME/go/bin/tmux-mosaic"
 echo "  Script tmux-mosaic creado y marcado como ejecutable."
