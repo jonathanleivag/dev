@@ -1494,12 +1494,15 @@ function M.open_workspace_explorer()
   end
 
   local common_dir = get_common_cwd(vim.g.active_workspace_dirs)
-  local excludes = get_workspace_excludes(common_dir, vim.g.active_workspace_dirs)
 
   Snacks.explorer({
     cwd = common_dir,
-    exclude = excludes,
     title = "Explorer Workspace (" .. vim.g.active_workspace_name .. ")",
+    transform = function(item)
+      if item.file and not is_path_allowed(item.file, vim.g.active_workspace_dirs) then
+        return false
+      end
+    end,
   })
 end
 
