@@ -569,7 +569,7 @@ append_once 'alias vi="nvim"' "$ZSHRC"
 append_once 'alias gg="lazygit"' "$ZSHRC"
 append_once 'alias lazymongo="~/go/bin/lazymongo"' "$ZSHRC"
 append_once 'alias lezymongo="lazymongo"' "$ZSHRC"
-append_once 'alias lm="lazymongo"' "$ZSHRC"
+append_once 'alias lm="$HOME/go/bin/lazymongo"' "$ZSHRC"
 append_once 'alias tm="tmux-mosaic"' "$ZSHRC"
 
 # Alias de Colima & Docker
@@ -1945,6 +1945,17 @@ return {
           Snacks.picker.grep()
         end
       end, { desc = "Grep Texto (Workspace o Local)" })
+
+      vim.keymap.set("n", "<leader>sw", function()
+        if vim.g.active_workspace_dirs and #vim.g.active_workspace_dirs > 0 then
+          Snacks.picker.grep_word({
+            dirs = vim.g.active_workspace_dirs,
+            title = "Palabra Workspace (" .. vim.g.active_workspace_name .. ")",
+          })
+        else
+          Snacks.picker.grep_word()
+        end
+      end, { desc = "Buscar Palabra bajo el Cursor (Workspace o Local)" })
 
       -- Intercept Explorer
       vim.keymap.set("n", "<leader>e", M.open_workspace_explorer, { desc = "Explorer (Workspace o Local)" })
