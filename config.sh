@@ -334,6 +334,9 @@ command = /opt/homebrew/bin/tmux
 # Mapear Cmd+T para abrir una nueva pestaña
 keybind = super+t=new_tab
 
+# Mapear Cmd+S para guardar en Neovim (enviar Ctrl+S / \x13)
+keybind = super+s=text:\x13
+
 # Keybind explícito de paste (texto). NO habilita pegado de imágenes —
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
 keybind = super+v=paste_from_clipboard
@@ -360,6 +363,9 @@ command = /opt/homebrew/bin/tmux
 
 # Mapear Cmd+T para abrir una nueva pestaña
 keybind = super+t=new_tab
+
+# Mapear Cmd+S para guardar en Neovim (enviar Ctrl+S / \x13)
+keybind = super+s=text:\x13
 
 # Keybind explícito de paste (texto). NO habilita pegado de imágenes —
 # Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
@@ -2059,26 +2065,33 @@ fi
 
 log "Configurando atajos de Neovim (~/.config/nvim/lua/config/keymaps.lua)"
 KEYMAPS_FILE="$NVIM_CONFIG/lua/config/keymaps.lua"
-if ! grep -qF "LazyVim.terminal({ \"lazymongo\" }" "$KEYMAPS_FILE" 2>/dev/null; then
-  mkdir -p "$(dirname "$KEYMAPS_FILE")"
-  cat >> "$KEYMAPS_FILE" <<'EOF'
+mkdir -p "$(dirname "$KEYMAPS_FILE")"
+cat > "$KEYMAPS_FILE" <<'EOF'
+-- Keymaps are automatically loaded on the VeryLazy event
+-- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
+-- Add any additional keymaps here
+
+-- Guardar archivo con Cmd+S (<D-s>) y Ctrl+S (<C-s>) en todos los modos (Normal, Insert, Visual)
+vim.keymap.set({ "i", "x", "n", "s" }, "<D-s>", "<cmd>w<cr>", { desc = "Guardar archivo (Cmd+S)" })
+vim.keymap.set({ "i", "x", "n", "s" }, "<C-s>", "<cmd>w<cr>", { desc = "Guardar archivo (Ctrl+S)" })
+
+-- Función robusta para abrir LazyMongo usando el ejecutable exacto
+local function open_lazymongo()
+  local bin = vim.fn.expand("$HOME/go/bin/lazymongo")
+  local cmd = vim.fn.executable(bin) == 1 and bin or "lazymongo"
+
+  if Snacks and Snacks.terminal then
+    Snacks.terminal({ cmd }, { esc_esc = false, ctrl_hjkl = false })
+  elseif LazyVim and LazyVim.terminal then
+    LazyVim.terminal({ cmd }, { esc_esc = false, ctrl_hjkl = false })
+  else
+    vim.cmd("terminal " .. cmd)
+  end
+end
 
 -- Abrir lazymongo con "<leader>lm" o "lm" directamente
-vim.keymap.set("n", "<leader>lm", function()
-  LazyVim.terminal({ "lazymongo" }, { esc_esc = false, ctrl_hjkl = false })
-end, { desc = "LazyMongo" })
-
-vim.keymap.set("n", "lm", function()
-  LazyVim.terminal({ "lazymongo" }, { esc_esc = false, ctrl_hjkl = false })
-end, { desc = "LazyMongo (Directo)" })
-EOF
-  echo "  + atajos para lazymongo agregados a $KEYMAPS_FILE"
-else
-  echo "  OK, atajos para lazymongo ya configurados en $KEYMAPS_FILE"
-fi
-
-if ! grep -qF "vim.keymap.set(\"n\", \"<leader>cp\"" "$KEYMAPS_FILE" 2>/dev/null; then
-  cat >> "$KEYMAPS_FILE" <<'EOF'
+vim.keymap.set("n", "<leader>lm", open_lazymongo, { desc = "LazyMongo" })
+vim.keymap.set("n", "lm", open_lazymongo, { desc = "LazyMongo (Directo)" })
 
 -- Copiar la ruta del archivo actual al portapapeles
 vim.keymap.set("n", "<leader>cp", function()
@@ -2093,8 +2106,7 @@ vim.keymap.set("n", "<leader>cP", function()
   vim.notify('Ruta absoluta copiada: "' .. path .. '"', vim.log.levels.INFO, { title = "Copiar Ruta" })
 end, { desc = "Copiar ruta absoluta" })
 EOF
-  echo "  + atajos para copiar ruta agregados a $KEYMAPS_FILE"
-fi
+echo "  Configuración de atajos en $KEYMAPS_FILE actualizada."
 
 log "Compilando dependencias de markdown-preview.nvim"
 # Forzar descarga de los extras de markdown en modo headless
