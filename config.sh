@@ -1080,81 +1080,27 @@ if ! command -v eslint_d &>/dev/null; then
 fi
 
 FORMATTING_FILE="$NVIM_CONFIG/lua/plugins/formatting.lua"
-if [ -f "$FORMATTING_FILE" ]; then
-  warn "Ya existe $FORMATTING_FILE — no se sobreescribe para no perder tus ajustes."
-else
-  mkdir -p "$NVIM_CONFIG/lua/plugins"
-  cat > "$FORMATTING_FILE" <<'EOF'
--- Configuración de formateo inteligente en guardado:
--- Respetar las reglas de cada proyecto (.prettierrc, .eslintrc, eslint.config.js, .editorconfig)
+mkdir -p "$NVIM_CONFIG/lua/plugins"
+cat > "$FORMATTING_FILE" <<'EOF'
+-- Configuración de formateo automático perfecto al guardar (Cmd+S / :w)
+-- Usa Prettier (con comillas simples y sin punto y coma) + eslint_d para dejar el código 100% libre de errores ESLint
 return {
-  -- 1. Configurar conform.nvim para usar Prettier y/o ESLint según los archivos reales del proyecto
   {
     "stevearc/conform.nvim",
     opts = function(_, opts)
-      opts.formatters_by_ft = opts.formatters_by_ft or {}
-
-      local js_formatters = { "prettier", "eslint_d", stop_after_first = false }
-
-      opts.formatters_by_ft.javascript = js_formatters
-      opts.formatters_by_ft.javascriptreact = js_formatters
-      opts.formatters_by_ft.typescript = js_formatters
-      opts.formatters_by_ft.typescriptreact = js_formatters
-      opts.formatters_by_ft.vue = js_formatters
-      opts.formatters_by_ft.json = { "prettier" }
-      opts.formatters_by_ft.jsonc = { "prettier" }
-      opts.formatters_by_ft.html = { "prettier" }
-      opts.formatters_by_ft.css = { "prettier" }
-      opts.formatters_by_ft.scss = { "prettier" }
-      opts.formatters_by_ft.less = { "prettier" }
-      opts.formatters_by_ft.yaml = { "prettier" }
-      opts.formatters_by_ft.markdown = { "prettier" }
-
-      opts.default_format_opts = {
-        timeout_ms = 5000,
+      -- Formateo automático al guardar
+      opts.format_on_save = {
+        timeout_ms = 3000,
         async = false,
-        quiet = false,
-        lsp_format = "fallback",
+        quiet = true,
+        lsp_format = "never", -- NUNCA usar formateadores LSP de html/cssls
       }
 
       opts.formatters = opts.formatters or {}
 
-      -- Prettier SOLO se ejecuta si el proyecto tiene una configuración explícita de Prettier
+      -- Configurar Prettier con opciones por defecto: comillas simples ('') y sin punto y coma (no semi)
       opts.formatters.prettier = {
-        condition = function(self, ctx)
-          local has_prettier_file = vim.fs.find({
-            ".prettierrc",
-            ".prettierrc.json",
-            ".prettierrc.yml",
-            ".prettierrc.yaml",
-            ".prettierrc.json5",
-            ".prettierrc.js",
-            ".prettierrc.cjs",
-            ".prettierrc.mjs",
-            "prettier.config.js",
-            "prettier.config.cjs",
-            "prettier.config.mjs",
-          }, { path = ctx.filename, upward = true })[1] ~= nil
-
-          if has_prettier_file then
-            return true
-          end
-
-          -- Verificar si package.json contiene la propiedad "prettier"
-          local pkg_file = vim.fs.find({ "package.json" }, { path = ctx.filename, upward = true })[1]
-          if pkg_file then
-            local f = io.open(pkg_file, "r")
-            if f then
-              local content = f:read("*a")
-              f:close()
-              if content and content:find('"prettier"') then
-                return true
-              end
-            end
-          end
-
-          return false
-        end,
+        prepend_args = { "--single-quote", "--no-semi" },
       }
 
       -- ESLint (vía eslint_d) solo se ejecuta si el proyecto tiene configuración de ESLint (.eslintrc* o eslint.config.*)
@@ -1175,15 +1121,46 @@ return {
 
       opts.formatters.eslint_d = { condition = eslint_condition }
 
+      opts.formatters_by_ft = opts.formatters_by_ft or {}
+
+      local js_formatters = { "prettier", "eslint_d", stop_after_first = false }
+
+      opts.formatters_by_ft.vue = js_formatters
+      opts.formatters_by_ft.javascript = js_formatters
+      opts.formatters_by_ft.javascriptreact = js_formatters
+      opts.formatters_by_ft.typescript = js_formatters
+      opts.formatters_by_ft.typescriptreact = js_formatters
+      opts.formatters_by_ft.json = { "prettier" }
+      opts.formatters_by_ft.jsonc = { "prettier" }
+      opts.formatters_by_ft.html = { "prettier" }
+      opts.formatters_by_ft.css = { "prettier" }
+      opts.formatters_by_ft.scss = { "prettier" }
+      opts.formatters_by_ft.less = { "prettier" }
+      opts.formatters_by_ft.yaml = { "prettier" }
+      opts.formatters_by_ft.markdown = { "prettier" }
+
       return opts
     end,
   },
 
-  -- 2. Desactivar formateo de vtsls/ts_ls para evitar que desconfigure las comillas/puntos y coma
+  -- Desactivar formateadores de LSPs para que NUNCA alteren o colapsen el código de Vue/HTML
   {
     "neovim/nvim-lspconfig",
     opts = {
       servers = {
+        html = {
+          on_attach = function(client)
+            client.server_capabilities.documentFormattingProvider = false
+            client.server_capabilities.documentRangeFormattingProvider = false
+          end,
+        },
+        cssls = {
+          filetypes = { "css", "scss", "less", "vue" },
+          on_attach = function(client)
+            client.server_capabilities.documentFormattingProvider = false
+            client.server_capabilities.documentRangeFormattingProvider = false
+          end,
+        },
         vtsls = {
           settings = {
             typescript = { format = { enable = false } },
@@ -1196,18 +1173,12 @@ return {
             javascript = { format = { enable = false } },
           },
         },
-        eslint = {
-          settings = {
-            workingDirectories = { mode = "auto" },
-          },
-        },
       },
     },
   },
 }
 EOF
-  echo "  Configuración de formateo creada en $FORMATTING_FILE"
-fi
+echo "  Configuración de formateo actualizada en $FORMATTING_FILE"
 
 log "Configurando dashboard de bienvenida (header personalizado)"
 DASHBOARD_FILE="$NVIM_CONFIG/lua/plugins/dashboard.lua"
@@ -2052,6 +2023,89 @@ EOF
   echo "  Config de Kulala creada en $KULALA_FILE"
 fi
 
+log "Configurando soporte de colores visuales y autocompletado CSS en Vue (~/.config/nvim/lua/plugins/vue-colors-css.lua)"
+VUE_COLORS_CSS_FILE="$NVIM_CONFIG/lua/plugins/vue-colors-css.lua"
+cat > "$VUE_COLORS_CSS_FILE" <<'EOF'
+return {
+  -- Highlighting de colores CSS (previsualización de colores como green, #00ff00, bg-red-500 en .vue, .css, .js)
+  {
+    "brenoprata10/nvim-highlight-colors",
+    event = { "BufReadPre", "BufNewFile" },
+    opts = {
+      render = "background",
+      enable_named_colors = true,
+      enable_tailwinds = true,
+    },
+  },
+
+  -- Asegurar que Mason instale css-lsp, html-lsp, emmet-ls y tailwindcss-language-server
+  {
+    "williamboman/mason.nvim",
+    opts = function(_, opts)
+      opts.ensure_installed = opts.ensure_installed or {}
+      vim.list_extend(opts.ensure_installed, { "css-lsp", "html-lsp", "emmet-ls", "tailwindcss-language-server" })
+    end,
+  },
+
+  -- Configurar autocompletado de HTML, Emmet, CSS y Tailwind CSS dentro de archivos .vue
+  {
+    "neovim/nvim-lspconfig",
+    opts = {
+      servers = {
+        -- Autocompletado de Tailwind CSS (flex, grid, bg-blue-500, p-4, items-center, etc.)
+        tailwindcss = {
+          filetypes = { "html", "css", "scss", "javascript", "javascriptreact", "typescript", "typescriptreact", "vue", "svelte", "astro" },
+          init_options = {
+            userLanguages = {
+              vue = "html",
+            },
+          },
+          settings = {
+            tailwindCSS = {
+              experimental = {
+                classRegex = {
+                  { "cva\\(([^)]*)\\)", "[\"'`]([^\"'`]* construct)?[\"'`]" },
+                  { "cx\\(([^)]*)\\)", "(?:[\"'`]([^\"'`]* construct)?[\"'`]|(\\w+))" },
+                  "class:\\s*['\"]([^'\"]*)['\"]",
+                  ":class=\"([^\"]*)\"",
+                },
+              },
+              validate = true,
+            },
+          },
+        },
+        -- Autocompletado de etiquetas y atributos HTML (div, section, input, class, placeholder, etc.) en .vue
+        html = {
+          filetypes = { "html", "templ", "vue" },
+          on_attach = function(client)
+            client.server_capabilities.documentFormattingProvider = false
+            client.server_capabilities.documentRangeFormattingProvider = false
+          end,
+        },
+        -- Expansión ultra rápida de abreviaciones Emmet (ej: div.container>ul>li*3) en .vue
+        emmet_ls = {
+          filetypes = { "html", "vue", "css", "scss", "javascriptreact", "typescriptreact" },
+        },
+        -- Autocompletado de CSS dentro de bloques <style> en .vue
+        cssls = {
+          filetypes = { "css", "scss", "less", "vue" },
+          on_attach = function(client)
+            client.server_capabilities.documentFormattingProvider = false
+            client.server_capabilities.documentRangeFormattingProvider = false
+          end,
+          settings = {
+            css = { validate = true, lint = { unknownAtRules = "ignore" } },
+            scss = { validate = true, lint = { unknownAtRules = "ignore" } },
+            less = { validate = true, lint = { unknownAtRules = "ignore" } },
+          },
+        },
+      },
+    },
+  },
+}
+EOF
+echo "  Configuración de colores y CSS Vue creada en $VUE_COLORS_CSS_FILE"
+
 
 log "Desactivando chequeo de orden de imports de LazyVim (falso positivo con extras.lua manual)"
 OPTIONS_FILE="$NVIM_CONFIG/lua/config/options.lua"
@@ -2140,6 +2194,7 @@ else
 unbind C-b
 set -g prefix C-a
 bind C-a send-prefix
+bind a send-prefix
 
 # Mouse: click para cambiar de panel, arrastrar para redimensionar, scroll para history
 set -g mouse on
