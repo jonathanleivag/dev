@@ -1466,7 +1466,10 @@ end
 
 function M.open_workspace_explorer()
   if not vim.g.active_workspace_dirs or #vim.g.active_workspace_dirs == 0 then
-    Snacks.explorer()
+    Snacks.explorer({
+      hidden = true,
+      ignored = true,
+    })
     return
   end
 
@@ -1474,6 +1477,8 @@ function M.open_workspace_explorer()
 
   Snacks.explorer({
     cwd = common_dir,
+    hidden = true,
+    ignored = true,
     title = "Explorer Workspace (" .. vim.g.active_workspace_name .. ")",
     transform = function(item)
       if item.file and not is_path_allowed(item.file, vim.g.active_workspace_dirs) then
@@ -1877,6 +1882,13 @@ return {
       { "<leader>We", M.edit_json, desc = "Editar JSON de Workspaces" },
     },
     opts = function(_, opts)
+      opts.picker = opts.picker or {}
+      opts.picker.sources = opts.picker.sources or {}
+      opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
+        hidden = true,
+        ignored = true,
+      })
+
       -- Intercept Búsqueda de Archivos
       vim.keymap.set("n", "<leader><space>", function()
         if vim.g.active_workspace_dirs and #vim.g.active_workspace_dirs > 0 then
