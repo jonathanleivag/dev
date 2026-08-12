@@ -563,6 +563,16 @@ else
   brew install eza
 fi
 
+log "Verificando Speedtest de Ookla (CLI oficial de prueba de velocidad)"
+if brew list speedtest &>/dev/null; then
+  echo "  speedtest OK, ya instalado"
+else
+  warn "speedtest no encontrado. Instalando..."
+  brew tap teamookla/speedtest
+  brew trust teamookla/speedtest 2>/dev/null || true
+  brew install speedtest --force
+fi
+
 log "Configurando alias (cat, ls, cd -> bat, eza, zoxide)"
 append_once 'alias cat="bat"' "$ZSHRC"
 append_once 'alias ls="eza --icons --group-directories-first"' "$ZSHRC"
