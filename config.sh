@@ -2409,6 +2409,21 @@ else
   brew install --cask antigravity-cli
 fi
 
+log "Verificando Graphify (Knowledge Graph para asistentes de IA)"
+if command -v graphify &>/dev/null; then
+  echo "  Graphify OK ($(graphify --version 2>/dev/null || echo 'instalado'))"
+else
+  warn "Graphify no encontrado. Instalando vía pip3..."
+  pip3 install graphifyy
+
+  GRAPHIFY_BIN="$(find /Library/Frameworks/Python.framework/Versions/*/bin ~/.local/bin -name graphify 2>/dev/null | head -n 1)"
+  if [ -n "$GRAPHIFY_BIN" ]; then
+    mkdir -p "$HOME/.local/bin" "$HOME/go/bin"
+    ln -sf "$GRAPHIFY_BIN" "$HOME/.local/bin/graphify"
+    ln -sf "$GRAPHIFY_BIN" "$HOME/go/bin/graphify"
+  fi
+fi
+
 # ---------- Fin ----------
 
 log "Listo. Resumen de lo instalado:"
@@ -2425,7 +2440,7 @@ echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
-echo "  - Claude Code + Antigravity CLI (asistentes de código con IA)"
+echo "  - Claude Code + Antigravity CLI + Graphify (asistentes de código con IA y grafo de conocimiento)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
