@@ -82,6 +82,11 @@ else
   echo "  git OK ($(git --version))"
 fi
 
+log "Configurando git mergetool con Neovim (nvim -d)"
+git config --global merge.tool nvim
+git config --global mergetool.nvim.cmd 'nvim -d "$LOCAL" "$REMOTE" "$MERGED"'
+git config --global mergetool.nvim.trustExitCode true
+
 log "Configurando identidad de git por carpeta (personal vs. trabajo)"
 GIT_NAME="$(git config --global user.name || true)"
 GIT_EMAIL="$(git config --global user.email || true)"
@@ -169,10 +174,17 @@ else
   brew install lazygit
 fi
 
-log "Configurando lazygit (customCommands con IA)"
+log "Configurando lazygit (customCommands con IA y Mergetool Neovim)"
 LAZYGIT_CONFIG_DIR="$HOME/Library/Application Support/lazygit"
 mkdir -p "$LAZYGIT_CONFIG_DIR"
 cat > "$LAZYGIT_CONFIG_DIR/config.yml" <<'EOF'
+git:
+  mergetool:
+    cmd: 'nvim -d "$LOCAL" "$REMOTE" "$MERGED"'
+    prompt: false
+os:
+  editPreset: 'nvim'
+
 customCommands:
   # --- SECCIÓN DE ARCHIVOS (Files Panel) ---
   # Generar commit automático con IA en INGLÉS y revisar/confirmar antes de hacer commit
@@ -573,6 +585,30 @@ else
   brew install speedtest --force
 fi
 
+log "Verificando Harlequin (IDE SQL interactivo para terminal)"
+if brew list harlequin &>/dev/null; then
+  echo "  harlequin OK, ya instalado"
+else
+  warn "harlequin no encontrado. Instalando..."
+  brew install harlequin
+fi
+
+log "Configurando perfiles de conexión de Harlequin (~/.config/harlequin/config.toml)"
+mkdir -p "$HOME/.config/harlequin"
+if [ ! -f "$HOME/.config/harlequin/config.toml" ]; then
+  cat > "$HOME/.config/harlequin/config.toml" <<'EOF'
+# Archivo de configuración de perfiles guardados para Harlequin
+# Documentación: https://harlequin.sh/docs/config
+
+# default_profile = "local_postgres"
+
+# [profiles.local_postgres]
+# adapter = "postgres"
+# conn_str = ["postgres://postgres:postgres@localhost:5432/postgres"]
+EOF
+  echo "  Plantilla de perfiles de Harlequin creada en ~/.config/harlequin/config.toml"
+fi
+
 log "Configurando alias (cat, ls, cd -> bat, eza, zoxide)"
 append_once 'alias cat="bat"' "$ZSHRC"
 append_once 'alias ls="eza --icons --group-directories-first"' "$ZSHRC"
@@ -587,6 +623,10 @@ append_once 'alias lazymongo="~/go/bin/lazymongo"' "$ZSHRC"
 append_once 'alias lezymongo="lazymongo"' "$ZSHRC"
 append_once 'alias lm="$HOME/go/bin/lazymongo"' "$ZSHRC"
 append_once 'alias tm="tmux-mosaic"' "$ZSHRC"
+append_once 'alias hq="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
+append_once 'alias hsql="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
+append_once 'alias harlequin="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
+append_once 'alias lsql="lazysql"' "$ZSHRC"
 
 # Alias de Colima & Docker
 append_once 'alias cos="colima start --cpu 2 --memory 4"' "$ZSHRC"
@@ -990,6 +1030,39 @@ fi
 log "Instalando mongosh (respaldo oficial de MongoDB)"
 brew install mongosh
 
+log "Instalando vi-mongo (TUI para MongoDB con atajos Vim)"
+if brew list vi-mongo &>/dev/null; then
+  echo "  vi-mongo OK, ya instalado"
+else
+  warn "vi-mongo no encontrado. Instalando..."
+  brew tap kopecmaciej/vi-mongo
+  brew trust kopecmaciej/vi-mongo 2>/dev/null || true
+  brew install vi-mongo
+fi
+
+log "Configurando vi-mongo para omitir la ventana emergente inicial"
+VI_MONGO_CONFIG_DIR="$HOME/Library/Application Support/vi-mongo"
+mkdir -p "$VI_MONGO_CONFIG_DIR"
+cat > "$VI_MONGO_CONFIG_DIR/config.yaml" <<'EOF'
+version: v0.3.0
+log:
+    path: /tmp/vi-mongo.log
+    level: info
+    prettyPrint: true
+editor:
+    command: ""
+    env: EDITOR
+ui:
+    databasePanelWidth: 30
+showConnectionPage: true
+showWelcomePage: false
+currentConnection: ""
+connections: []
+styles:
+    betterSymbols: true
+    currentStyle: default.yaml
+EOF
+
 log "Configurando conexiones nombradas de MongoDB (comando 'mgo')"
 MONGO_CONNECTIONS_FILE="$HOME/.config/mongo-connections.sh"
 if [ -f "$MONGO_CONNECTIONS_FILE" ]; then
@@ -1082,6 +1155,29 @@ EOF
   echo "  Extras creados en $EXTRAS_FILE"
   echo "  (typescript, vue, astro, tailwind, json, prettier, eslint — Mason los instalará al abrir nvim por primera vez)"
 fi
+
+log "Configurando plugin git-conflict.nvim para resolución visual de conflictos en Neovim"
+GIT_CONFLICT_FILE="$NVIM_CONFIG/lua/plugins/git-conflict.lua"
+cat > "$GIT_CONFLICT_FILE" <<'EOF'
+return {
+  {
+    "akinsho/git-conflict.nvim",
+    version = "*",
+    config = function()
+      require("git-conflict").setup({
+        default_mappings = true, -- co (ours), ct (theirs), cb (both), c0 (none), ]x (next), [x] (prev)
+        default_commands = true,
+        disable_diagnostics = true,
+        highlights = {
+          incoming = "DiffAdd",
+          current = "DiffText",
+        },
+      })
+    end,
+  },
+}
+EOF
+echo "  Plugin git-conflict.nvim configurado en $GIT_CONFLICT_FILE"
 
 log "Configurando formateo respetando reglas del proyecto (Prettier / ESLint / .editorconfig)"
 if ! command -v eslint_d &>/dev/null; then
