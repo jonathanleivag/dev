@@ -213,6 +213,12 @@ customCommands:
     subprocess: true
 
   # --- SECCIÓN DE RAMAS (Local Branches Panel) ---
+  # Copiar el nombre de la rama seleccionada al portapapeles con 'y'
+  - key: 'y'
+    command: 'printf "%s" {{.SelectedLocalBranch.Name | quote}} | pbcopy'
+    context: 'localBranches'
+    description: 'Copiar nombre de la rama local al portapapeles'
+
   # Resumir todos los cambios de la rama seleccionada en comparación con main
   - key: 'x'
     command: >
@@ -220,6 +226,13 @@ customCommands:
     context: 'localBranches'
     loadingText: 'Resumiendo cambios de la rama con IA...'
     subprocess: true
+
+  # --- SECCIÓN DE RAMAS REMOTAS (Remote Branches Panel) ---
+  # Copiar el nombre de la rama remota seleccionada al portapapeles con 'y'
+  - key: 'y'
+    command: 'printf "%s" {{.SelectedRemoteBranch.Name | quote}} | pbcopy'
+    context: 'remoteBranches'
+    description: 'Copiar nombre de la rama remota al portapapeles'
 EOF
 echo "  Config de lazygit creada/actualizada en $LAZYGIT_CONFIG_DIR/config.yml"
 
