@@ -5,7 +5,7 @@
 # Instalación reproducible del stack de terminal:
 # Warp/Ghostty (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
-# zoxide/bat/eza + git config + pnpm/yarn + kubectl/k9s + Docker/lazydocker +
+# zoxide/bat/eza + git config + pnpm + kubectl/k9s + Docker/lazydocker +
 # lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
 # prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
 # Claude Code + Antigravity CLI
@@ -271,7 +271,7 @@ if command -v nvm &>/dev/null && [ -z "$(nvm ls --no-colors 2>/dev/null | grep -
   nvm alias default lts/*
 fi
 
-log "Verificando pnpm y yarn (vía corepack, incluido con Node)"
+log "Verificando pnpm (vía corepack, incluido con Node)"
 if command -v corepack &>/dev/null; then
   corepack enable 2>/dev/null || warn "corepack enable falló, revisa permisos o corre manualmente"
 
@@ -281,16 +281,9 @@ if command -v corepack &>/dev/null; then
     warn "Activando pnpm vía corepack..."
     corepack prepare pnpm@latest --activate
   fi
-
-  if command -v yarn &>/dev/null; then
-    echo "  yarn OK ($(yarn --version))"
-  else
-    warn "Activando yarn vía corepack..."
-    corepack prepare yarn@stable --activate
-  fi
 else
-  warn "corepack no encontrado (viene con Node 16.10+). Instalando pnpm/yarn como paquetes globales de npm en su lugar..."
-  npm install -g pnpm yarn
+  warn "corepack no encontrado (viene con Node 16.10+). Instalando pnpm como paquete global de npm en su lugar..."
+  npm install -g pnpm
 fi
 
 # ---------- 3. zsh ----------
@@ -606,21 +599,51 @@ else
   brew install harlequin
 fi
 
-log "Configurando perfiles de conexión de Harlequin (~/.config/harlequin/config.toml)"
+log "Configurando perfiles de conexión y keymap Vim de Harlequin (~/.config/harlequin/config.toml)"
 mkdir -p "$HOME/.config/harlequin"
-if [ ! -f "$HOME/.config/harlequin/config.toml" ]; then
-  cat > "$HOME/.config/harlequin/config.toml" <<'EOF'
-# Archivo de configuración de perfiles guardados para Harlequin
-# Documentación: https://harlequin.sh/docs/config
+cat > "$HOME/.config/harlequin/config.toml" <<'EOF'
+default_profile = "vicidial prod"
 
-# default_profile = "local_postgres"
+[profiles."vicidial prod"]
+adapter = "mysql"
+host = "172.16.1.23"
+port = 3306
+user = "root"
+password = "T3c4dmin1234."
+database = "asterisk"
+theme = "catppuccin-frappe"
+viewer_max_rows = 100000
+keymap_name = ["vscode", "lazygit_keys"]
 
-# [profiles.local_postgres]
-# adapter = "postgres"
-# conn_str = ["postgres://postgres:postgres@localhost:5432/postgres"]
+[keymaps]
+lazygit_keys = [
+  { action = "focus_data_catalog", keys = "f6", key_display = "f6 Catalog" },
+  { action = "code_editor.focus_data_catalog", keys = "f6", key_display = "f6 Catalog" },
+  { action = "results_viewer.focus_data_catalog", keys = "f6", key_display = "f6 Catalog" },
+
+  { action = "focus_query_editor", keys = "f2", key_display = "f2 Editor" },
+  { action = "data_catalog.focus_query_editor", keys = "f2", key_display = "f2 Editor" },
+  { action = "results_viewer.focus_query_editor", keys = "f2", key_display = "f2 Editor" },
+
+  { action = "focus_results_viewer", keys = "f5", key_display = "f5 Results" },
+  { action = "data_catalog.focus_results_viewer", keys = "f5", key_display = "f5 Results" },
+  { action = "code_editor.focus_results_viewer", keys = "f5", key_display = "f5 Results" },
+
+  { action = "data_catalog.cursor_down", keys = "j, down" },
+  { action = "data_catalog.cursor_up", keys = "k, up" },
+  { action = "data_catalog.toggle_node", keys = "l, h, space" },
+  { action = "data_catalog.select_cursor", keys = "l, enter" },
+
+  { action = "results_viewer.cursor_down", keys = "j, down" },
+  { action = "results_viewer.cursor_up", keys = "k, up" },
+  { action = "results_viewer.cursor_left", keys = "h, left" },
+  { action = "results_viewer.cursor_right", keys = "l, right" },
+  { action = "results_viewer.copy_selection", keys = "y, ctrl+c", key_display = "y Copy" },
+  { action = "results_viewer.select_all", keys = "shift+y, Y", key_display = "Y Select All" }
+]
 EOF
-  echo "  Plantilla de perfiles de Harlequin creada en ~/.config/harlequin/config.toml"
-fi
+cp "$HOME/.config/harlequin/config.toml" "$HOME/.harlequin.toml"
+echo "  Perfiles y keymaps de Harlequin respaldados en ~/.config/harlequin/config.toml y ~/.harlequin.toml"
 
 log "Configurando alias (cat, ls, cd -> bat, eza, zoxide)"
 append_once 'alias cat="bat"' "$ZSHRC"
@@ -2533,12 +2556,70 @@ else
   fi
 fi
 
+# ---------- 15. Aplicaciones GUI (Casks) ----------
+
+log "Verificando Lens (Kubernetes IDE)"
+if [ -d "/Applications/Lens.app" ] || brew list --cask lens &>/dev/null; then
+  echo "  Lens OK, ya instalado"
+else
+  warn "Lens no encontrado. Instalando..."
+  brew install --cask lens
+fi
+
+log "Verificando Docker Desktop"
+if [ -d "/Applications/Docker.app" ] || brew list --cask docker &>/dev/null || brew list --cask docker-desktop &>/dev/null; then
+  echo "  Docker Desktop OK, ya instalado"
+else
+  warn "Docker Desktop no encontrado. Instalando..."
+  brew install --cask docker
+fi
+
+log "Verificando Warp (Terminal)"
+if [ -d "/Applications/Warp.app" ] || brew list --cask warp &>/dev/null; then
+  echo "  Warp OK, ya instalado"
+else
+  warn "Warp no encontrado. Instalando..."
+  brew install --cask warp
+fi
+
+log "Verificando Antigravity"
+if [ -d "/Applications/Antigravity.app" ] || brew list --cask antigravity &>/dev/null || brew list --cask antigravity-cli &>/dev/null; then
+  echo "  Antigravity OK, ya instalado"
+else
+  warn "Antigravity no encontrado. Instalando..."
+  brew install --cask antigravity
+fi
+
+log "Verificando Antigravity IDE"
+if [ -d "/Applications/Antigravity IDE.app" ] || brew list --cask antigravity-ide &>/dev/null; then
+  echo "  Antigravity IDE OK, ya instalado"
+else
+  warn "Antigravity IDE no encontrado. Instalando..."
+  brew install --cask antigravity-ide
+fi
+
+log "Verificando Android Studio"
+if [ -d "/Applications/Android Studio.app" ] || brew list --cask android-studio &>/dev/null; then
+  echo "  Android Studio OK, ya instalado"
+else
+  warn "Android Studio no encontrado. Instalando..."
+  brew install --cask android-studio
+fi
+
+log "Verificando MongoDB Compass"
+if [ -d "/Applications/MongoDB Compass.app" ] || brew list --cask mongodb-compass &>/dev/null; then
+  echo "  MongoDB Compass OK, ya instalado"
+else
+  warn "MongoDB Compass no encontrado. Instalando..."
+  brew install --cask mongodb-compass
+fi
+
 # ---------- Fin ----------
 
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
-echo "  - nvm + Node LTS + pnpm + yarn (vía corepack)"
-echo "  - Ghostty (terminal alterno, opcional junto a Warp) + config visual + fuente Nerd Font"
+echo "  - nvm + Node LTS + pnpm (vía corepack)"
+echo "  - Ghostty + Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
@@ -2549,7 +2630,7 @@ echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
-echo "  - Claude Code + Antigravity CLI + Graphify (asistentes de código con IA y grafo de conocimiento)"
+echo "  - Claude Code + Antigravity CLI + Antigravity IDE + Graphify (asistentes de código con IA y grafo de conocimiento)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
