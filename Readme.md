@@ -1,18 +1,28 @@
 # Stack de terminal — Jonathan
 
-Configuración reproducible para migrar de entorno gráfico (VSCode/Antigravity, Lens, Docker Desktop) a un flujo 100% en terminal, en cualquier Mac (Apple Silicon o Intel).
+Configuración reproducible para migrar de entorno gráfico (VSCode/Antigravity, Lens, Docker Desktop) a un flujo 100% en terminal y optimizado para desarrollo con Cursor, en cualquier Mac (Apple Silicon o Intel).
 
 ## Contenido
 
-- `setup-terminal-stack.sh` — script principal, idempotente (se puede correr varias veces sin duplicar configuración).
+- `config.sh` — script principal, idempotente y con **menú interactivo** (se puede correr varias veces sin duplicar configuración).
 
 ## Cómo ejecutarlo (Mac nuevo o reinstalación)
 
 ```bash
 cd ~/Development/dev/
-chmod +x setup-terminal-stack.sh
-./setup-terminal-stack.sh
+chmod +x config.sh
+./config.sh
 ```
+
+Al ejecutar `./config.sh` se abrirá un **Menú Interactivo** (impulsado por `fzf`) que te permite seleccionar exactamente qué módulos deseas instalar o actualizar:
+
+* **[Tab] / [Espacio]**: Selecciona o desmarca los módulos que quieras.
+* **[Enter]**: Confirma y ejecuta los módulos elegidos.
+
+> 💡 **Modo Automático:** Si deseas instalar/actualizar todo sin abrir el menú interactivo, ejecuta:
+> ```bash
+> ./config.sh --all
+> ```
 
 Al terminar:
 
@@ -22,26 +32,44 @@ source ~/.zshrc
 
 o simplemente cierra y abre una terminal nueva.
 
-Luego abre `nvim` una vez para que Mason instale automáticamente los LSPs de los extras de LazyVim (typescript, vue, json, prettier, eslint) — ver detalles en la sección "Primer uso de LazyVim" más abajo.
-
 ## Qué instala
 
 | Categoría          | Herramientas                                                                                           |
 | ------------------ | ------------------------------------------------------------------------------------------------------ |
-| Base               | Homebrew, git (identidad por carpeta: personal/trabajo), gh (GitHub CLI), nvm + Node LTS + pnpm + yarn |
+| Base               | Homebrew, git (identidad por carpeta: personal/trabajo), gh (GitHub CLI), nvm + Node LTS + pnpm         |
 | Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                       |
-| Prompt             | Starship (git branch/status, node, duración de comandos, equipo actual en vez de cuenta de gcloud)     |
-| CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`), lazygit (`gg`)                                    |
-| Terminal           | Ghostty (tema Catppuccin Mocha, fuente JetBrainsMono Nerd Font)                                        |
+| Prompt             | Starship (git branch/status, node, duración de comandos, máquina actual)                              |
+| CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`), lazygit (`gg` con `y` para copiar rama)          |
+| Terminal           | Warp                                                                                                   |
 | Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
-| Asistentes de IA   | Claude Code, Codex CLI, Antigravity CLI (todos vía Homebrew cask)                                       |
+| Asistentes de IA   | Claude Code, Graphify (Knowledge Graph para IA)                                                        |
 | Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                    |
 | Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                            |
-| Bases relacionales | lazysql (MySQL + PostgreSQL)                                                                           |
-| MongoDB            | vi-mongo, mongosh, conexiones nombradas (`mgo <nombre>`)                                               |
-| Editor             | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado)   |
+| Bases relacionales | Harlequin SQL IDE (con atajos Vim y perfiles guardados) + lazysql                                      |
+| MongoDB            | lazymongo, vi-mongo, mongosh, conexiones nombradas (`mgo <nombre>`)                                    |
+| Editor Terminal    | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado)   |
+| Editor GUI         | Cursor (configuración, atajos de teclado y 80+ extensiones migradas)                                    |
+| Apps GUI (Casks)   | Warp, Lens, Docker Desktop, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop |
 
-Nada de esto borra o reemplaza tus apps gráficas actuales — todo corre en paralelo.
+Nada de esto borra o reemplaza tus datos — todo corre de forma idempotente y segura.
+
+## Menú Interactivo de Módulos
+
+Al ejecutar `./config.sh`, puedes activar o desactivar cualquiera de los 13 módulos:
+
+1. **Git & GitHub CLI**: Identidades por carpeta (personal/trabajo) y `gh`.
+2. **Node.js**: NVM + Node.js LTS + pnpm (vía Corepack).
+3. **Zsh Plugins, Fuente & Starship Prompt**: Completions, fzf-tab, autosuggestions, JetBrainsMono Nerd Font.
+4. **Herramientas CLI**: `zoxide` (`cd`), `bat` (`cat`), `eza` (`ls`/`ll`/`lt`), `speedtest`.
+5. **Kubernetes Tools**: `kubectl`, `k9s`, `kubectx`, `kubens`, `stern`.
+6. **Docker Tools**: `colima`, `docker`, `lazydocker`.
+7. **Bases de Datos SQL**: Harlequin SQL IDE (perfil `vicidial prod`) y `lazysql`.
+8. **MongoDB Tools**: `lazymongo`, `mongosh`, `vi-mongo`, alias `mgo`.
+9. **Neovim & LazyVim**: Configuración completa en `~/.config/nvim`, LSPs, Mergetool 3-way.
+10. **Tmux & TPM**: `~/.tmux.conf` + TPM + plugins de resurgimiento de sesión.
+11. **Asistentes de IA CLI**: Claude Code, Graphify.
+12. **Aplicaciones GUI (Casks)**: Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop.
+13. **Cursor Editor**: Sincronización automática de `settings.json`, `keybindings.json` e instalación de 80+ extensiones.
 
 ## Alias de CLI moderna
 
@@ -57,29 +85,51 @@ El script agrega estos alias a tu `.zshrc`:
 | `e`   | —         | `exit`                                                 |
 | `vi`  | `vi`      | `nvim`                                                 |
 | `gg`  | —         | `lazygit`                                              |
+| `hq`  | —         | `harlequin-launcher` (selector de conexiones SQL)      |
+| `lsql`| —         | `lazysql`                                              |
+| `lm`  | —         | `lazymongo`                                            |
 
-`zoxide` aprende de tus `cd` con el tiempo: después de visitar una carpeta unas cuantas veces, `z nombre-parcial` te lleva ahí sin necesidad de la ruta completa.
+## Atajos y Configuración de Cursor
+
+Cursor queda preparado automáticamente con tus ajustes de trabajo e identidades:
+
+* **Sincronización de Ajustes**: `settings.json` y `keybindings.json` se escriben en `~/Library/Application Support/Cursor/User/`.
+* **Atajos Destacados**:
+  * `Shift + Cmd + G`: Abrir panel de Git / SCM.
+  * `Shift + Cmd + A`: Toggle de barra de actividades.
+  * `Shift + Cmd + S`: Save All (Guardar todo).
+  * `Shift + Cmd + W`: Close All Editors (Cerrar editores).
+  * `Shift + Cmd + C`: Fold / Collapse (Plegar código / colapsar carpetas).
+  * `Alt + Espacio`: Disparar autocompletado e IntelliSense.
+  * `Cmd + G`: Git Graph view.
+  * `Shift + Cmd + J`: Maximizar/Restaurar panel de terminal.
+* **Extensiones (80+ Plugins)**: Se instalan automáticamente plugins como Catppuccin, GitLens, Prettier, ESLint, Tailwind, Prisma, Volar, ErrorLens, Material Icon Theme, Python, Docker, SQLTools, MongoDB, etc.
+
+## Harlequin SQL IDE & Atajos Vim
+
+Harlequin incluye el perfil **`vicidial prod`** (MySQL `172.16.1.23`) y atajos de navegación integrados:
+
+* **Navegación entre Paneles (Footer visible en todas las pantallas)**:
+  * **`F6 Catalog`**: Ir directo al árbol de tablas a la izquierda.
+  * **`F2 Editor`**: Ir directo al editor SQL.
+  * **`F5 Results`**: Ir directo a la tabla de resultados.
+* **Comandos Vim en el Catálogo**:
+  * **`j` / `k`**: Subir y bajar por la lista de tablas.
+  * **`l`**: Desplegar / Expandir nodo.
+  * **`h`**: Minimizar / Colapsar nodo.
+* **Comandos Vim en Resultados**:
+  * **`h` / `j` / `k` / `l`**: Moverse libremente por filas y celdas.
+  * **`y`**: Copiar celda/selección actual.
+  * **`Y`** (`Shift + y`): Seleccionar **todos** los registros de la consulta (luego presiona `y` para copiar todo).
+
+## Lazygit
+
+* Presionar **`y`** estando sobre cualquier rama (local o remota) copia el nombre de la rama directamente a tu portapapeles (`pbcopy`).
+* Mergetool 3-way integrado con Neovim para resolución de conflictos (`vimdiff` / `git-conflict.nvim`).
 
 ## Conexiones nombradas de MongoDB (`mgo`)
 
 Si trabajas con varias conexiones de MongoDB (distintos clientes/entornos), el script agrega una función `mgo` a tu `.zshrc` que lee conexiones nombradas desde `~/.config/mongo-connections.sh` y abre `mongosh` directo con la URI correspondiente.
-
-**Este archivo de conexiones NUNCA se sube a ningún repo** — vive únicamente en `~/.config/mongo-connections.sh`, fuera de `terminal-stack`, precisamente porque contiene credenciales. Si algún día armas tu propio backup de dotfiles (como el repo `antigravity-config`), no incluyas este archivo ahí sin cifrarlo.
-
-**Editar tus conexiones:**
-
-```bash
-nvim ~/.config/mongo-connections.sh
-```
-
-```bash
-declare -A MONGO_CONNECTIONS=(
-  [cliente-x]="mongodb+srv://usuario:password@cluster.mongodb.net/db"
-  [cliente-y]="mongodb://usuario:password@10.0.0.5:27017/db2"
-)
-```
-
-**Uso:**
 
 ```bash
 mgo                # sin argumentos: lista las conexiones disponibles
@@ -91,343 +141,29 @@ mgo cliente-x       # abre mongosh conectado a esa URI
 El script instala tmux con una config lista para usar (`~/.tmux.conf`) y **TPM** (Tmux Plugin Manager):
 
 - **Prefix:** `Ctrl-a` (en vez del default `Ctrl-b`)
-- **Splits:** `prefix + |` (vertical), `prefix + -` (horizontal) — abren en el directorio actual
-- **Navegación entre paneles:** `prefix + h/j/k/l` (estilo vim)
-- **Mouse:** activado (clic para cambiar de panel, arrastrar para redimensionar, scroll para history)
-- **Recargar config:** `prefix + r`
-- **Plugins incluidos:** `tmux-sensible`, `tmux-resurrect` (guardar/restaurar sesiones), `tmux-continuum` (autoguardado cada 15 min + restaurar sesión al abrir tmux)
+- **Splits:** `prefix + |` (vertical), `prefix + -` (horizontal)
+- **Navegación:** `prefix + h/j/k/l`
+- **Plugins incluidos:** `tmux-sensible`, `tmux-resurrect`, `tmux-continuum`
 
-**Primera vez:** abre `tmux` y presiona `prefix + I` (Ctrl-a, luego `I` mayúscula) para que TPM instale los plugins.
+Primera vez: abre `tmux` y presiona `prefix + I` (Ctrl-a, `I`).
 
 ## Primer uso de LazyVim
 
-**Paso 1 — Abrir nvim por primera vez**
-
-```bash
-nvim
-```
-
-La primera vez instala automáticamente todos los plugins de LazyVim (pantalla de progreso) y, con **Mason**, descarga los LSPs de los extras habilitados (typescript-language-server, vue-language-server, astro-language-server, tailwindcss-language-server, eslint-lsp, prettier). Puede tardar 1-2 minutos — espera a que termine antes de cerrar.
-
-**Paso 2 — Verificar que los LSPs quedaron instalados**
-
-Dentro de nvim:
-
-```
-:Mason
-```
-
-Debes ver `typescript-language-server`, `vue-language-server`, `astro-language-server`, `tailwindcss-language-server`, `eslint-lsp`, `prettier`, etc. con ícono verde (instalados).
-
-**Paso 3 — Atajos básicos para probar en un proyecto real**
-
-```bash
-cd ~/algun-proyecto-ts
-nvim .
-```
-
-| Atajo        | Acción                                |
-| ------------ | ------------------------------------- |
-| `gd`         | Ir a definición                       |
-| `K`          | Ver documentación/tipo bajo el cursor |
-| `<leader>ca` | Code actions (autofix, imports, etc.) |
-| `<leader>ff` | Buscar archivo                        |
-| `<leader>fg` | Buscar texto en el proyecto           |
-| `<leader>e`  | File explorer                         |
-
-> El `<leader>` por defecto en LazyVim es la barra espaciadora.
-
-Nota: los plugins de git integrados (`gitsigns`, incluido por defecto) usan tu `~/.gitconfig` global — no requieren configuración adicional en LazyVim.
-
-### Extras agregados manualmente (Astro + Tailwind)
-
-Como tu `~/.config/nvim` ya existía cuando agregamos estos frameworks, el script no los agregó solo (por diseño, para no sobreescribir tus ajustes). Se agregaron a mano en:
-
-```bash
-nvim ~/.config/nvim/lua/plugins/extras.lua
-```
-
-Contenido final del archivo:
-
-```lua
-return {
-  { import = "lazyvim.plugins.extras.lang.typescript" },
-  { import = "lazyvim.plugins.extras.lang.vue" },
-  { import = "lazyvim.plugins.extras.lang.astro" },
-  { import = "lazyvim.plugins.extras.lang.tailwind" },
-  { import = "lazyvim.plugins.extras.lang.json" },
-  { import = "lazyvim.plugins.extras.formatting.prettier" },
-  { import = "lazyvim.plugins.extras.linting.eslint" },
-}
-```
-
-React, Next.js y Nest.js no necesitan extras propios — ya quedan cubiertos por `lang.typescript` (JSX/TSX y decoradores incluidos).
-
-Tras editar, reabre `nvim` — Lazy sincroniza los nuevos imports solo. Si no arranca automático: `:Lazy sync`.
-
-### Dashboard de bienvenida personalizado
-
-La pantalla de inicio de LazyVim (antes mostraba "LAZYVIM" en ASCII art) ahora muestra el nombre `Jonathanleivag`. Configurado en:
-
-```bash
-~/.config/nvim/lua/plugins/dashboard.lua
-```
-
-Usa el plugin `snacks.nvim` (el que trae LazyVim para el dashboard), sobreescribiendo `opts.dashboard.preset.header` con el ASCII art. Si quieres cambiarlo por otro texto o estilo, genera uno nuevo con `figlet` (fuentes: `figlet -l` para listarlas) y reemplaza el contenido entre `[[ ]]` en ese archivo.
-
-## Repo de tu config de Neovim
-
-El script inicializa `~/.config/nvim` como su propio repo git. Para respaldarla en GitHub y poder clonarla en otro Mac en vez de partir de LazyVim/starter desde cero:
-
-```bash
-cd ~/.config/nvim
-git remote add origin <url-de-tu-repo>
-git push -u origin main
-```
-
-En un Mac nuevo, antes de correr el script:
-
-```bash
-git clone <url-de-tu-repo> ~/.config/nvim
-```
-
----
-
-## Troubleshooting — errores ya resueltos en esta instalación
-
-### 0. Identidad de git: personal vs. trabajo
-
-Como manejas proyectos personales y de trabajo (Movatec) en carpetas separadas, el script configura **dos identidades automáticas por carpeta**, en vez de un solo `user.name`/`user.email` global:
-
-- **Personal (default):** aplica a cualquier repo fuera de la carpeta de trabajo → configurado directamente en `~/.gitconfig`.
-- **Trabajo:** aplica solo dentro de `~/Development/Movatec/` (o la ruta que hayas indicado) → vive en un archivo separado, `~/.gitconfig-work`, cargado automáticamente vía `includeIf "gitdir:..."`.
-
-**La primera vez que corres el script**, te pregunta:
-
-1. Carpeta de proyectos personales (default sugerido: `~/Development/jonathanleivag`)
-2. Carpeta de proyectos de trabajo (default sugerido: `~/Development/Movatec`)
-3. Nombre y email para el perfil personal
-4. Nombre y email para el perfil de trabajo
-
-**Verificar que quedó bien**, parado dentro de un repo de cada carpeta:
-
-```bash
-cd ~/Development/jonathanleivag/algun-proyecto && git config user.name && git config user.email
-cd ~/Development/Movatec/algun-proyecto && git config user.name && git config user.email
-```
-
-Cada uno debe mostrar la identidad correspondiente.
-
-**Ver la config resultante:**
-
-```bash
-cat ~/.gitconfig
-cat ~/.gitconfig-work
-```
-
-**Si agregas una nueva carpeta de trabajo más adelante** (otro cliente, otro repo fuera de `Movatec`), agrega un bloque similar a mano en `~/.gitconfig`:
-
-```
-[includeIf "gitdir:~/Development/OtraCarpeta/"]
-  path = ~/.gitconfig-work
-```
-
-### 1. Ghostty: `theme "catppuccin-mocha" not found`
-
-**Causa:** el nombre del tema en Ghostty va con mayúsculas y espacio, no en formato `kebab-case`.
-
-**Ver los nombres exactos disponibles:**
-
-```bash
-/Applications/Ghostty.app/Contents/MacOS/ghostty +list-themes | grep -i catppuccin
-```
-
-**Corregir la config** (`~/.config/ghostty/config`):
-
-```bash
-sed -i '' 's/theme = catppuccin-mocha/theme = "Catppuccin Mocha"/' ~/.config/ghostty/config
-```
-
-**Confirmar:**
-
-```bash
-cat ~/.config/ghostty/config
-```
-
-Luego cerrar y volver a abrir Ghostty por completo (no solo "Reload Configuration" si el archivo cambió después de que el diálogo ya estaba abierto).
-
-> Nota: el script `setup-terminal-stack.sh` ya quedó corregido con el nombre correcto para futuras instalaciones (en otro Mac no debería volver a pasar).
-
-### 2. zsh: `compinit: insecure directories, run compaudit for list`
-
-**Causa:** un directorio en el `$FPATH` (usado por zsh-completions) tiene permisos de escritura para group/other, lo cual zsh marca como riesgo de seguridad.
-
-**Ver cuáles directorios están marcados:**
-
-```bash
-compaudit
-```
-
-→ Resultado en este caso: `/opt/homebrew/share`
-
-**Corregir permisos:**
-
-```bash
-chmod go-w /opt/homebrew/share
-```
-
-**Confirmar que ya no hay directorios inseguros** (no debe imprimir nada):
-
-```bash
-compaudit
-```
-
-Abrir una terminal nueva para confirmar que el mensaje ya no aparece al iniciar sesión.
-
----
-
-### 3. `zsh: command not found: gh`
-
-**Causa:** GitHub CLI no estaba instalado (ya corregido en el script — ahora se instala junto con git, y el script te pregunta si quieres correr `gh auth login` en el momento).
-
-**Instalar/autenticar manualmente si hace falta:**
-
-```bash
-brew install gh
-gh auth login
-```
-
-`gh auth login` te guía para autenticarte (HTTPS o SSH, autorización vía navegador).
-
----
-
-### 4. LazyVim: `The order of your lazy.nvim imports is incorrect`
-
-**Causa:** es solo una **advertencia**, no un error — los plugins se instalan igual. LazyVim valida el orden esperado de imports (`lazyvim.plugins` → `lazyvim.plugins.extras.*` → tus propios `plugins`), y como agregamos `extras.lua` manualmente (patrón oficial y recomendado por LazyVim), el chequeo a veces da falso positivo.
-
-**Ya corregido en el script:** agrega `vim.g.lazyvim_check_order = false` en `~/.config/nvim/lua/config/options.lua`.
-
-**Aplicar manualmente si hace falta:**
-
-```bash
-echo "vim.g.lazyvim_check_order = false" >> ~/.config/nvim/lua/config/options.lua
-```
-
-Reabre `nvim` y el aviso no debería volver a aparecer.
-
----
-
-### 5. `.zshrc:source: no such file or directory: /opt/homebrew/share/fzf-tab/fzf-tab.plugin.zsh`
-
-**Causa:** `fzf-tab` no es una fórmula real de Homebrew (error mío al asumirlo en una versión anterior del script) — por eso `brew install fzf-tab` no dejaba el archivo en esa ruta.
-
-**Ya corregido en el script:** ahora clona `fzf-tab` directo de GitHub a `~/.zsh-plugins/fzf-tab`, y limpia automáticamente la línea rota si viene de una instalación anterior.
-
-**Arreglar manualmente si hace falta:**
-
-```bash
-git clone https://github.com/Aloxaf/fzf-tab ~/.zsh-plugins/fzf-tab
-sed -i '' 's|source /opt/homebrew/share/fzf-tab/fzf-tab.plugin.zsh|source ~/.zsh-plugins/fzf-tab/fzf-tab.plugin.zsh|' ~/.zshrc
-source ~/.zshrc
-```
-
----
-
-### 6. Ghostty no permite pegar imágenes (Cmd+V) en Claude Code
-
-**Limitación confirmada, no un error de configuración.** Se investigó el código fuente oficial de Ghostty (tag `v1.3.1`, la versión estable más reciente al momento de escribir esto) y **no tiene implementado el pegado de imágenes desde el portapapeles** hacia el programa corriendo dentro (Claude Code, en este caso). Solo soporta texto y rutas de archivo — una imagen "cruda" (ej. un screenshot copiado con `Cmd+Ctrl+Shift+4`) no tiene forma de llegar al programa vía `Cmd+V`.
-
-Hay un PR abierto en el repo de Ghostty (`#12030`, protocolo de portapapeles de Kitty) que podría resolver esto en el futuro, pero al momento de escribir esto sigue sin fusionarse.
-
-**El script agrega este keybind** a `~/.config/ghostty/config`:
-
-```
-keybind = super+v=paste_from_clipboard
-```
-
-Esto deja `Cmd+V` explícitamente vinculado a pegar texto — **no habilita pegado de imágenes**, solo hace explícito el comportamiento de paste normal.
-
-**Workarounds mientras Ghostty no lo soporte:**
-
-- Usar Warp o iTerm2 puntualmente para sesiones de Claude Code donde necesites pegar imágenes.
-- Guardar el screenshot como archivo y pasar la ruta directo en el prompt de Claude Code, en vez de pegar.
-- Seguir el PR `#12030` en GitHub para saber cuándo se resuelve de raíz.
-
----
-
-### 7. Starship mostraba la cuenta de gcloud (`☁️  tu-email@gmail.com`) en el prompt
-
-**Causa:** el módulo `[gcloud]` de Starship está habilitado por defecto y detecta la config de `~/.config/gcloud/` (queda ahí aunque el binario `gcloud` no esté instalado). Como esa config tenía una cuenta personal asociada, el prompt exponía el email en cada terminal — incluso dentro de proyectos de Movatec.
-
-**Ya corregido en el script:** `setup-terminal-stack.sh` ahora:
-
-1. Genera `~/.config/starship/machine.txt` con el modelo de Mac y su chip/procesador (vía `system_profiler SPHardwareDataType`, con fallback a `Processor Name` en Macs Intel). Se cachea en archivo porque `system_profiler` es lento para correr en cada render del prompt.
-2. Agrega a `~/.config/starship.toml`:
-
-```toml
-[gcloud]
-disabled = true
-
-[custom.machine]
-command = "cat ~/.config/starship/machine.txt 2>/dev/null"
-when = true
-symbol = "</> "
-format = "on [$symbol$output]($style) "
-```
-
-Si tu `starship.toml` ya existía antes de este cambio, el script detecta que falta `[custom.machine]` y agrega el bloque al final del archivo (no lo sobreescribe).
-
-**Resultado:** el prompt pasa de `on ☁️  tu-email@gmail.com` a `on </> jonathanleivag - MacBook Pro Apple M1 Pro`.
-
----
-
-### 8. `go install github.com/kopoli/vi-mongo@latest`: `remote: Repository not found`
-
-**Causa:** el script apuntaba al dueño de repo equivocado. El dueño real de `vi-mongo` es `kopecmaciej`, no `kopoli` — `github.com/kopoli/vi-mongo` nunca existió.
-
-**Ya corregido en el script:** `setup-terminal-stack.sh` ahora instala desde `github.com/kopecmaciej/vi-mongo@latest`.
-
-**Además, se detectó y corrigió un problema relacionado:** `go install` deja los binarios en `~/go/bin`, que no estaba en el `PATH` — el binario se instalaba pero el shell no lo encontraba. El script ahora agrega `export PATH="$HOME/go/bin:$PATH"` a `~/.zshrc` (vía `append_once`, así que no duplica la línea si ya está).
-
-**Arreglar manualmente si hace falta:**
-
-```bash
-go install github.com/kopecmaciej/vi-mongo@latest
-echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-```
-
----
-
-### 9. El script se caía con `sed: ~/.zshrc: in-place editing only works for regular files`
-
-**Causa:** si `~/.zshrc` es un symlink (por ejemplo, hacia un repo de dotfiles propio, patrón común si respaldas tu config con git), la limpieza de la línea rota de fzf-tab usaba `sed -i` directo sobre `$ZSHRC`. `sed -i` en macOS se niega a editar en el lugar cuando el destino es un symlink — y como el script corre con `set -euo pipefail`, ese error mataba la ejecución completa ahí mismo.
-
-**Ya corregido en el script:** en vez de `sed -i`, ahora reescribe vía archivo temporal + redirección (`grep -v ... "$ZSHRC" > "$ZSHRC.tmp" && cat "$ZSHRC.tmp" > "$ZSHRC"`), lo que sigue el symlink y escribe en el archivo real al que apunta, sin romper el symlink ni fallar.
-
----
+1. Abre `nvim` por primera vez para que **Mason** descargue los LSPs (TypeScript, Vue, Astro, Tailwind, ESLint, Prettier).
+2. Revisa con `:Mason` que todos tengan el ícono verde.
+3. Atajos principales: `<leader>ff` (buscar archivo), `<leader>fg` (buscar texto), `<leader>e` (explorador de archivos), `gd` (ir a definición).
 
 ## Repo en GitHub
 
-Este repo (`terminal-stack`) ya está subido a tu cuenta de GitHub. Para clonarlo en un Mac nuevo:
+Este repo (`terminal-stack`) está subido a tu cuenta de GitHub. Para clonarlo en un Mac nuevo:
 
 ```bash
 gh repo clone terminal-stack ~/Development/dev
 cd ~/Development/dev
-chmod +x setup-terminal-stack.sh
-./setup-terminal-stack.sh
-```
-
-**Para futuros cambios** (por ejemplo, si editas el script o este README):
-
-```bash
-cd ~/Development/dev/
-git add .
-git commit -m "Describe aquí el cambio"
-git push
+chmod +x config.sh
+./config.sh
 ```
 
 ## Notas
 
-- Si en el futuro `compaudit` vuelve a marcar directorios (por ejemplo tras un `brew upgrade` que cambie permisos), corre de nuevo `compaudit` y aplica `chmod go-w <ruta>` sobre lo que aparezca.
-- Si cambias el tema de Ghostty más adelante, usa siempre `+list-themes` primero para copiar el nombre exacto — evita adivinar el formato.
+- El script es completamente **idempotente**: puedes volver a correrlo cuantas veces quieras y solo aplicará los módulos que selecciones en el menú.
