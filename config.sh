@@ -3,7 +3,7 @@
 # setup-terminal-stack.sh
 #
 # Instalación reproducible del stack de terminal:
-# Warp/Ghostty (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
+# Warp (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
 # zoxide/bat/eza + git config + pnpm + kubectl/k9s + Docker/lazydocker +
 # lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
@@ -72,6 +72,70 @@ else
   echo "  Homebrew OK ($(brew --version | head -1))"
 fi
 
+# ---------- Interactive Menu & Options ----------
+
+RUN_ALL=false
+SELECTED_MODULES=""
+
+for arg in "$@"; do
+  if [ "$arg" = "--all" ] || [ "$arg" = "-a" ] || [ "$arg" = "--yes" ] || [ "$arg" = "-y" ]; then
+    RUN_ALL=true
+  fi
+done
+
+should_run() {
+  local num="$1"
+  if [ "$RUN_ALL" = "true" ] || [ -z "$SELECTED_MODULES" ] || echo "$SELECTED_MODULES" | grep -q "^$num\."; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+if [ "$RUN_ALL" = "false" ]; then
+  echo -e "
+[1;36m=========================================================[0m"
+  echo -e "[1;36m  🚀 SELECCIONA QUÉ MÓDULOS INSTALAR / CONFIGURAR     [0m"
+  echo -e "[1;36m=========================================================[0m"
+  echo -e "Uso: Usa [TAB] o [ESPACIO] para seleccionar/desmarcar."
+  echo -e "     Presiona [ENTER] para confirmar y comenzar."
+  echo -e "     (o ejecuta './config.sh --all' para instalar todo sin menú)
+"
+
+  # Asegurar que fzf esté disponible
+  if ! command -v fzf &>/dev/null; then
+    echo -e "[1;33mInstalando fzf para el menú interactivo...[0m"
+    brew install fzf &>/dev/null || true
+  fi
+
+  if command -v fzf &>/dev/null; then
+    SELECTED_MODULES=$(cat <<'EOF_FZF' | fzf --multi --prompt="Selecciona módulos > " --header="[TAB/ESPACIO]: Marcar/Desmarcar | [ENTER]: Confirmar" --height=50% --border=rounded --color=dark
+1. Git & GitHub CLI (gh + identidades por carpeta)
+2. Node.js (NVM + Node LTS + pnpm)
+3. Zsh Plugins, Fuente Nerd Font & Starship Prompt
+4. Herramientas CLI (zoxide, bat, eza, fd, ripgrep, speedtest)
+5. Kubernetes Tools (kubectl, k9s, kubectx, stern)
+6. Docker Tools (Colima, Docker CLI, lazydocker)
+7. Bases de Datos SQL (Harlequin + Lazysql)
+8. MongoDB Tools (Lazymongo + mongosh + vi-mongo + alias mgo)
+9. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
+10. Tmux & TPM Plugins
+11. Asistentes de IA CLI (Claude Code + Graphify)
+12. Aplicaciones GUI Casks (Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome)
+13. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
+EOF_FZF
+    )
+    if [ -z "$SELECTED_MODULES" ]; then
+      echo -e "
+[1;33mNo se seleccionó ningún módulo. Saliendo sin realizar cambios.[0m"
+      exit 0
+    fi
+  else
+    RUN_ALL=true
+  fi
+fi
+
+if should_run 1; then
 # ---------- 1. git ----------
 
 log "Verificando git"
@@ -236,6 +300,9 @@ customCommands:
 EOF
 echo "  Config de lazygit creada/actualizada en $LAZYGIT_CONFIG_DIR/config.yml"
 
+fi
+
+if should_run 2; then
 # ---------- 2. nvm (Node Version Manager) ----------
 
 log "Verificando nvm"
@@ -286,6 +353,9 @@ else
   npm install -g pnpm
 fi
 
+fi
+
+if should_run 3; then
 # ---------- 3. zsh ----------
 
 log "Verificando zsh"
@@ -316,87 +386,9 @@ else
   echo "  zsh ya es tu shell por defecto"
 fi
 
-# ---------- 4. Terminal emulator ----------
+# ---------- 4. Fuente Nerd Font ----------
 
-log "Verificando Ghostty"
-if [ -d "/Applications/Ghostty.app" ] || brew list --cask ghostty &>/dev/null; then
-  echo "  Ghostty OK, ya instalado"
-else
-  warn "Ghostty no encontrado. Instalando..."
-  brew install --cask ghostty
-fi
-
-log "Configurando Ghostty (tema, fuente, transparencia)"
-GHOSTTY_CONFIG_DIR="$HOME/.config/ghostty"
-GHOSTTY_CONFIG_FILE="$GHOSTTY_CONFIG_DIR/config"
-mkdir -p "$GHOSTTY_CONFIG_DIR"
-
-if [ -f "$GHOSTTY_CONFIG_FILE" ]; then
-  warn "Ya existe $GHOSTTY_CONFIG_FILE — no se sobreescribe para no perder tus ajustes."
-  echo "  Config sugerida disponible en: $GHOSTTY_CONFIG_FILE.suggested"
-  cat > "$GHOSTTY_CONFIG_FILE.suggested" <<'EOF'
-# Config sugerida de Ghostty — copia lo que quieras a tu config real
-theme = "Catppuccin Mocha"
-font-family = "JetBrainsMono Nerd Font"
-font-size = 14
-background-opacity = 0.95
-window-padding-x = 10
-window-padding-y = 10
-cursor-style = block
-mouse-hide-while-typing = true
-window-show-tab-bar = auto
-
-# Iniciar tmux independientemente por cada pestaña en Ghostty
-command = /opt/homebrew/bin/tmux
-
-# Mapear Cmd+T para abrir una nueva pestaña
-keybind = super+t=new_tab
-
-# Mapear Cmd+S para guardar en Neovim (enviar Ctrl+S / \x13)
-keybind = super+s=text:\x13
-
-# Keybind explícito de paste (texto). NO habilita pegado de imágenes —
-# Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
-keybind = super+v=paste_from_clipboard
-
-# Split navigation up/down using Cmd+{ and Cmd+}
-keybind = super+shift+[=goto_split:up
-keybind = super+shift+]=goto_split:down
-EOF
-else
-  cat > "$GHOSTTY_CONFIG_FILE" <<'EOF'
-# Config inicial generada por setup-terminal-stack.sh
-theme = "Catppuccin Mocha"
-font-family = "JetBrainsMono Nerd Font"
-font-size = 14
-background-opacity = 0.95
-window-padding-x = 10
-window-padding-y = 10
-cursor-style = block
-mouse-hide-while-typing = true
-window-show-tab-bar = auto
-
-# Iniciar tmux independientemente por cada pestaña en Ghostty
-command = /opt/homebrew/bin/tmux
-
-# Mapear Cmd+T para abrir una nueva pestaña
-keybind = super+t=new_tab
-
-# Mapear Cmd+S para guardar en Neovim (enviar Ctrl+S / \x13)
-keybind = super+s=text:\x13
-
-# Keybind explícito de paste (texto). NO habilita pegado de imágenes —
-# Ghostty aún no lo soporta (confirmado revisando su código fuente, v1.3.1).
-keybind = super+v=paste_from_clipboard
-
-# Split navigation up/down using Cmd+{ and Cmd+}
-keybind = super+shift+[=goto_split:up
-keybind = super+shift+]=goto_split:down
-EOF
-  echo "  Config creada en $GHOSTTY_CONFIG_FILE"
-fi
-
-log "Verificando fuente JetBrainsMono Nerd Font (usada en la config de Ghostty)"
+log "Verificando fuente JetBrainsMono Nerd Font"
 if brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
   echo "  Fuente OK, ya instalada"
 else
@@ -554,6 +546,9 @@ EOF
   echo "  Config creada en $STARSHIP_CONFIG_FILE"
 fi
 
+fi
+
+if should_run 4; then
 # ---------- 7. Utilidades modernas de CLI (zoxide, bat, eza) ----------
 
 log "Verificando zoxide (cd inteligente)"
@@ -712,6 +707,9 @@ EOF
   echo "  + función 'ia' agregada a $ZSHRC"
 fi
 
+fi
+
+if should_run 5; then
 # ---------- 8. Kubernetes ----------
 
 log "Verificando kubectl"
@@ -900,6 +898,9 @@ else
   echo "  OK, EDITOR y K9S_EDITOR ya configurados en $ZSHRC"
 fi
 
+fi
+
+if should_run 6; then
 # ---------- 9. Colima & Docker ----------
 
 log "Verificando Colima (Docker sin Docker Desktop)"
@@ -1041,11 +1042,17 @@ fi
 
 
 
+fi
+
+if should_run 7; then
 # ---------- 10. Bases de datos relacionales ----------
 
 log "Instalando lazysql (MySQL + PostgreSQL)"
 brew install lazysql
 
+fi
+
+if should_run 8; then
 # ---------- 11. MongoDB ----------
 
 log "Instalando lazymongo (requiere Go)"
@@ -1148,6 +1155,9 @@ else
   echo "  OK, función mgo ya presente en $ZSHRC"
 fi
 
+fi
+
+if should_run 9; then
 # ---------- 12. Editor: Neovim + LazyVim ----------
 
 log "Instalando Neovim"
@@ -2326,6 +2336,9 @@ if [ -d "$MARKDOWN_PREVIEW_APP_DIR" ]; then
   echo "  + npm install completado para markdown-preview.nvim"
 fi
 
+fi
+
+if should_run 10; then
 # ---------- 13. tmux ----------
 
 log "Verificando tmux"
@@ -2521,6 +2534,9 @@ else
   echo "  TPM instalado. Con tmux abierto, presiona 'prefix + I' (Ctrl-a luego I) para instalar los plugins."
 fi
 
+fi
+
+if should_run 11; then
 # ---------- 14. Asistentes de código con IA (CLIs) ----------
 
 log "Verificando Claude Code"
@@ -2532,14 +2548,6 @@ else
 fi
 
 
-
-log "Verificando Antigravity CLI"
-if brew list --cask antigravity-cli &>/dev/null; then
-  echo "  Antigravity CLI OK, ya instalado"
-else
-  warn "Antigravity CLI no encontrado. Instalando..."
-  brew install --cask antigravity-cli
-fi
 
 log "Verificando Graphify (Knowledge Graph para asistentes de IA)"
 if command -v graphify &>/dev/null; then
@@ -2556,6 +2564,9 @@ else
   fi
 fi
 
+fi
+
+if should_run 12; then
 # ---------- 15. Aplicaciones GUI (Casks) ----------
 
 log "Verificando Lens (Kubernetes IDE)"
@@ -2582,22 +2593,6 @@ else
   brew install --cask warp
 fi
 
-log "Verificando Antigravity"
-if [ -d "/Applications/Antigravity.app" ] || brew list --cask antigravity &>/dev/null || brew list --cask antigravity-cli &>/dev/null; then
-  echo "  Antigravity OK, ya instalado"
-else
-  warn "Antigravity no encontrado. Instalando..."
-  brew install --cask antigravity
-fi
-
-log "Verificando Antigravity IDE"
-if [ -d "/Applications/Antigravity IDE.app" ] || brew list --cask antigravity-ide &>/dev/null; then
-  echo "  Antigravity IDE OK, ya instalado"
-else
-  warn "Antigravity IDE no encontrado. Instalando..."
-  brew install --cask antigravity-ide
-fi
-
 log "Verificando Android Studio"
 if [ -d "/Applications/Android Studio.app" ] || brew list --cask android-studio &>/dev/null; then
   echo "  Android Studio OK, ya instalado"
@@ -2614,12 +2609,546 @@ else
   brew install --cask mongodb-compass
 fi
 
+log "Verificando Cursor (Editor de código con IA)"
+if [ -d "/Applications/Cursor.app" ] || brew list --cask cursor &>/dev/null; then
+  echo "  Cursor OK, ya instalado"
+else
+  warn "Cursor no encontrado. Instalando..."
+  brew install --cask cursor
+fi
+
+log "Configurando Google Chrome"
+if [ -d "/Applications/Google Chrome.app" ] || brew list --cask google-chrome &>/dev/null; then
+  echo "  Google Chrome OK, ya instalado"
+else
+  warn "Google Chrome no encontrado. Instalando..."
+  brew install --cask google-chrome
+fi
+
+fi
+
+if should_run 13; then
+log "Configurando atajos de teclado y ajustes en Cursor"
+CURSOR_USER_DIR="$HOME/Library/Application Support/Cursor/User"
+mkdir -p "$CURSOR_USER_DIR"
+
+cat > "$CURSOR_USER_DIR/keybindings.json" <<'EOF_CURSOR_KB'
+// Place your key bindings in this file to override the defaults
+[
+  {
+    "key": "alt+w",
+    "command": "editor.emmet.action.wrapWithAbbreviation"
+  },
+  {
+    "key": "shift+cmd+g",
+    "command": "-workbench.action.terminal.findPrevious",
+    "when": "terminalFindFocused && terminalHasBeenCreated || terminalFindFocused && terminalProcessSupported || terminalFocus && terminalHasBeenCreated || terminalFocus && terminalProcessSupported"
+  },
+  {
+    "key": "shift+cmd+g",
+    "command": "-editor.action.previousMatchFindAction",
+    "when": "editorFocus"
+  },
+  {
+    "key": "shift+cmd+g",
+    "command": "workbench.view.scm",
+    "when": "workbench.scm.active"
+  },
+  {
+    "key": "ctrl+shift+g",
+    "command": "-workbench.view.scm",
+    "when": "workbench.scm.active"
+  },
+  {
+    "key": "shift+cmd+g",
+    "command": "workbench.view.scm",
+    "when": "workbench.scm.active && !gitlens:disabled && config.gitlens.keymap == 'chorded'"
+  },
+  {
+    "key": "ctrl+shift+g",
+    "command": "-workbench.view.scm",
+    "when": "workbench.scm.active && !gitlens:disabled && config.gitlens.keymap == 'chorded'"
+  },
+  {
+    "key": "shift+cmd+c",
+    "command": "-workbench.action.terminal.openNativeConsole",
+    "when": "!terminalFocus"
+  },
+  {
+    "key": "shift+cmd+z",
+    "command": "-redo"
+  },
+  {
+    "key": "cmd+k z",
+    "command": "-workbench.action.toggleZenMode"
+  },
+  {
+    "key": "shift+cmd+a",
+    "command": "workbench.action.toggleActivityBarVisibility"
+  },
+  {
+    "key": "shift+cmd+s",
+    "command": "-workbench.action.files.saveLocalFile",
+    "when": "remoteFileDialogVisible"
+  },
+  {
+    "key": "shift+cmd+s",
+    "command": "-workbench.action.files.saveAs"
+  },
+  {
+    "key": "shift+cmd+s",
+    "command": "saveAll"
+  },
+  {
+    "key": "alt+cmd+s",
+    "command": "-saveAll"
+  },
+  {
+    "key": "shift+cmd+w",
+    "command": "-workbench.action.closeWindow"
+  },
+  {
+    "key": "shift+cmd+w",
+    "command": "workbench.action.closeAllEditors"
+  },
+  {
+    "key": "cmd+k cmd+w",
+    "command": "-workbench.action.closeAllEditors"
+  },
+  {
+    "key": "shift+cmd+c",
+    "command": "workbench.files.action.collapseExplorerFolders",
+    "when": "explorerViewletVisible && explorerViewletFocus && !inputFocus"
+  },
+  {
+    "key": "shift+cmd+c",
+    "command": "editor.toggleFold",
+    "when": "editorFocus"
+  },
+  {
+    "key": "shift+alt+c",
+    "command": "editor.foldAll",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+cmd+c",
+    "command": "editor.unfoldAll",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "shift+cmd+t",
+    "command": "-workbench.action.reopenClosedEditor"
+  },
+  {
+    "key": "shift+cmd+b",
+    "command": "-workbench.action.tasks.build",
+    "when": "taskCommandsRegistered"
+  },
+  {
+    "key": "shift+cmd+b",
+    "command": "github.cweijan.mysql.focus"
+  },
+  {
+    "key": "shift+cmd+r",
+    "command": "-rerunSearchEditorSearch",
+    "when": "inSearchEditor"
+  },
+  {
+    "key": "shift+cmd+r",
+    "command": "-reactSnippets.search",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "alt+space",
+    "command": "editor.action.triggerSuggest",
+    "when": "editorHasCompletionItemProvider && textInputFocus && !editorReadonly && !suggestWidgetVisible"
+  },
+  {
+    "key": "ctrl+space",
+    "command": "-editor.action.triggerSuggest",
+    "when": "editorHasCompletionItemProvider && textInputFocus && !editorReadonly && !suggestWidgetVisible"
+  },
+  {
+    "key": "alt+space",
+    "command": "focusSuggestion",
+    "when": "suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
+  },
+  {
+    "key": "ctrl+space",
+    "command": "-focusSuggestion",
+    "when": "suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
+  },
+  {
+    "key": "alt+space",
+    "command": "workbench.action.terminal.sendSequence",
+    "when": "terminalFocus && terminalShellIntegrationEnabled && !accessibilityModeEnabled && terminalShellType == 'pwsh'"
+  },
+  {
+    "key": "ctrl+space",
+    "command": "-workbench.action.terminal.sendSequence",
+    "when": "terminalFocus && terminalShellIntegrationEnabled && !accessibilityModeEnabled && terminalShellType == 'pwsh'"
+  },
+  {
+    "key": "alt+space",
+    "command": "workbench.action.terminal.sendSequence",
+    "when": "config.terminal.integrated.shellIntegration.suggestEnabled && terminalFocus && terminalShellIntegrationEnabled && !accessibilityModeEnabled && terminalShellType == 'pwsh'"
+  },
+  {
+    "key": "ctrl+space",
+    "command": "-workbench.action.terminal.sendSequence",
+    "when": "config.terminal.integrated.shellIntegration.suggestEnabled && terminalFocus && terminalShellIntegrationEnabled && !accessibilityModeEnabled && terminalShellType == 'pwsh'"
+  },
+  {
+    "key": "shift+cmd+z",
+    "command": "redo"
+  },
+  {
+    "key": "shift+cmd+b",
+    "command": "workbench.action.toggleAuxiliaryBar"
+  },
+  {
+    "key": "alt+cmd+b",
+    "command": "-workbench.action.toggleAuxiliaryBar"
+  },
+  {
+    "key": "cmd+k cmd+c",
+    "command": "-editor.action.addCommentLine",
+    "when": "editorTextFocus && !editorReadonly"
+  },
+  {
+    "key": "shift+cmd+t",
+    "command": "-headwind.sortTailwindClasses",
+    "when": "editorFocus"
+  },
+  {
+    "key": "shift+cmd+t",
+    "command": "-mergeEditor.toggleBetweenInputs",
+    "when": "isMergeEditor"
+  },
+  {
+    "key": "ctrl+shift+`",
+    "command": "-workbench.action.terminal.new",
+    "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
+  },
+  {
+    "key": "cmd+g",
+    "command": "git-graph.view"
+  },
+  {
+    "key": "shift+cmd+t",
+    "command": "-workbench.action.terminal.new",
+    "when": "terminalProcessSupported || terminalWebExtensionContributedProfile"
+  },
+  {
+    "key": "shift+cmd+t",
+    "command": "workbench.action.terminal.openNativeConsole",
+    "when": "!terminalFocus"
+  },
+  {
+    "key": "shift+cmd+r",
+    "command": "npm.focus"
+  },
+  {
+    "key": "shift+cmd+j",
+    "command": "workbench.action.toggleMaximizedPanel",
+    "when": "panelAlignment == 'center' || panelPosition != 'bottom' && panelPosition != 'top'"
+  }
+]
+EOF_CURSOR_KB
+
+cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
+{
+  "editor.inlineSuggest.enabled": true,
+  "editor.renderWhitespace": "none",
+  "editor.tabSize": 2,
+  "editor.fontWeight": "400",
+  "editor.fontLigatures": true,
+  "editor.acceptSuggestionOnEnter": "on",
+  "editor.fontSize": 14,
+  "editor.guides.bracketPairs": true,
+  "editor.fontFamily": "Victor Mono",
+  "editor.suggestSelection": "first",
+  "editor.formatOnPaste": false,
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [
+      {
+        "scope": "punctuation.definition.template-expression",
+        "settings": {
+          "foreground": "#fa2b7d"
+        }
+      },
+      {
+        "scope": "meta.template.expression",
+        "settings": {
+          "foreground": "#dcdcdc"
+        }
+      }
+    ]
+  },
+  "editor.wordBasedSuggestions": "off",
+  "editor.scrollbar.vertical": "hidden",
+  "indenticator.width": 0.1,
+  "indenticator.color.dark": "rgba(255, 255, 255, 0.1)",
+  "editor.rulers": [],
+  "editor.wordWrapColumn": 80,
+  "editor.minimap.maxColumn": 50,
+  "editor.formatOnType": false,
+  "explorer.confirmDelete": true,
+  "explorer.confirmDragAndDrop": true,
+  "explorer.autoReveal": false,
+  "emmet.triggerExpansionOnTab": true,
+  "terminal.integrated.fontFamily": "victor mono",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.shellIntegration.enabled": true,
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/bower_components": true
+  },
+  "git.autofetch": true,
+  "git.ignoreRebaseWarning": true,
+  "gitlens.advanced.messages": {
+    "suppressGitDisabledWarning": true
+  },
+  "files.trimTrailingWhitespace": true,
+  "files.exclude": {
+    ".next": false,
+    "node_modules": false,
+    ".idea": false
+  },
+  "liveServer.settings.port": 3000,
+  "liveServer.settings.donotVerifyTags": true,
+  "liveServer.settings.donotShowInfoMsg": true,
+  "editor.colorDecorators": true,
+  "editor.colorDecoratorsLimit": 500,
+  "html.autoClosingTags": true,
+  "javascript.autoClosingTags": true,
+  "typescript.autoClosingTags": true,
+  "markdown.preview.breaks": false,
+  "markdown.preview.linkify": true,
+  "markdown.preview.typographer": true,
+  "markdown.validate.enabled": true,
+  "editor.matchBrackets": false,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.suggest.autoImports": true,
+  "typescript.inlayHints.parameterNames.enabled": "all",
+  "javascript.inlayHints.parameterTypes.enabled": true,
+  "javascript.inlayHints.parameterNames.enabled": "all",
+  "javascript.suggest.autoImports": true,
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "javascript.inlayHints.variableTypes.enabled": true,
+  "javascript.validate.enable": true,
+  "javascript.inlayHints.functionLikeReturnTypes.enabled": true,
+  "javascript.inlayHints.propertyDeclarationTypes.enabled": true,
+  "html.hover.documentation": false,
+  "html.hover.references": false,
+  "vscodeGoogleTranslate.preferredLanguage": "Spanish",
+  "docwriter.hotkey.mac": "⌥ + .",
+  "editor.accessibilitySupport": "off",
+  "editor.bracketPairColorization.enabled": true,
+  "editor.linkedEditing": true,
+  "errorLens.excludeBySource": [
+    "dart(file_names)"
+  ],
+  "workbench.activityBar.location": "top",
+  "gitlens.graph.minimap.additionalTypes": [
+    "localBranches",
+    "stashes",
+    "remoteBranches",
+    "tags"
+  ],
+  "security.promptForLocalFileProtocolHandling": false,
+  "diffEditor.ignoreTrimWhitespace": false,
+  "git.confirmSync": false,
+  "gitlens.graph.showRemoteNames": true,
+  "gitHistory.sideBySide": true,
+  "debug.showVariableTypes": true,
+  "terminal.integrated.suggest.enabled": true,
+  "workbench.colorTheme": "Catppuccin Frappé",
+  "editor.copyWithSyntaxHighlighting": false,
+  "editor.emptySelectionClipboard": true,
+  "window.newWindowDimensions": "inherit",
+  "editor.snippetSuggestions": "top",
+  "editor.detectIndentation": false,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "editor.lineNumbers": "on",
+  "editor.guides.indentation": false,
+  "editor.hover.delay": 1500,
+  "git.decorations.enabled": false,
+  "editor.lightbulb.enabled": "off",
+  "editor.overviewRulerBorder": false,
+  "editor.renderLineHighlight": "none",
+  "editor.occurrencesHighlight": "off",
+  "problems.decorations.enabled": false,
+  "editor.renderControlCharacters": false,
+  "editor.gotoLocation.multipleReferences": "goto",
+  "editor.gotoLocation.multipleDefinitions": "goto",
+  "editor.gotoLocation.multipleDeclarations": "goto",
+  "editor.gotoLocation.multipleImplementations": "goto",
+  "editor.gotoLocation.multipleTypeDefinitions": "goto",
+  "editor.wordWrap": "on",
+  "cSpell.userWords": [
+    "jonathanleivagomez"
+  ],
+  "terminal.integrated.minimumContrastRatio": 1,
+  "terminal.explorerKind": "integrated",
+  "workbench.settings.editor": "json",
+  "editor.formatOnSave": true,
+  "githubPullRequests.createOnPublishBranch": "never",
+  "workbench.statusBar.visible": true,
+  "workbench.tips.enabled": false,
+  "workbench.view.alwaysShowHeaderActions": true,
+  "workbench.view.showQuietly": {
+    "workbench.panel.output": false
+  },
+  "breadcrumbs.enabled": false,
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.empty.hint": "hidden",
+  "workbench.editor.showTabs": "none",
+  "zenMode.centerLayout": false,
+  "window.dialogStyle": "custom",
+  "editor.scrollbar.horizontal": "hidden",
+  "editor.minimap.autohide": "mouseover",
+  "workbench.startupEditor": "readme",
+  "terminal.external.osxExec": "Warp.app",
+  "terminal.integrated.env.osx": {},
+  "workbench.sideBar.location": "right",
+  "workbench.colorCustomizations": {},
+  "redhat.telemetry.enabled": true,
+  "diffEditor.codeLens": true,
+  "[dockercompose]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced",
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "terminal.integrated.inheritEnv": true,
+  "claudeCode.preferredLocation": "panel",
+  "claudeCode.useTerminal": true,
+  "chat.commandCenter.enabled": false,
+  "http.systemCertificatesNode": true,
+  "workbench.iconTheme": "catppuccin-frappe",
+  "typescript.experimental.useTsgo": true,
+  "window.commandCenter": false,
+  "workbench.quickOpen.closeOnFocusLost": false,
+  "workbench.layoutControl.enabled": true
+}
+EOF_CURSOR_ST
+
+echo "  Ajustes y atajos de teclado creados en $CURSOR_USER_DIR"
+
+log "Instalando extensiones de Cursor (migradas desde Antigravity IDE)"
+if command -v cursor &>/dev/null; then
+  CURSOR_EXTS=(
+    "aaron-bond.better-comments"
+    "adpyke.codesnap"
+    "adrianwilczynski.alpine-js-intellisense"
+    "anthropic.claude-code"
+    "apollographql.vscode-apollo"
+    "astro-build.astro-vscode"
+    "axetroy.vscode-npm-import-package-version"
+    "aykutsarac.jsoncrack-vscode"
+    "bradlc.vscode-tailwindcss"
+    "catppuccin.catppuccin-vsc"
+    "catppuccin.catppuccin-vsc-icons"
+    "christian-kohler.path-intellisense"
+    "cipchk.cssrem"
+    "clinyong.vscode-css-modules"
+    "csstools.postcss"
+    "cweijan.vscode-database-client2"
+    "dbaeumer.vscode-eslint"
+    "donjayamanne.githistory"
+    "dracula-theme.theme-dracula"
+    "dsznajder.es7-react-js-snippets"
+    "eamodio.gitlens"
+    "esbenp.prettier-vscode"
+    "expo.vscode-expo-tools"
+    "funkyremi.vscode-google-translate"
+    "github.vscode-pull-request-github"
+    "golang.go"
+    "googlecloudtools.datacloud"
+    "gruntfuggly.todo-tree"
+    "heybourn.headwind"
+    "idered.npm"
+    "intellsmi.comment-translate"
+    "irongeek.vscode-env"
+    "johnpapa.vscode-cloak"
+    "llvm-vs-code-extensions.vscode-clangd"
+    "mechatroner.rainbow-csv"
+    "mguellsegarra.highlight-on-copy"
+    "mhutchie.git-graph"
+    "midudev.better-svg"
+    "mikestead.dotenv"
+    "mintlify.document"
+    "mongodb.mongodb-vscode"
+    "ms-azuretools.vscode-docker"
+    "ms-python.debugpy"
+    "ms-python.python"
+    "ms-python.vscode-pylance"
+    "ms-toolsai.jupyter"
+    "ms-vscode-remote.remote-containers"
+    "ms-vscode.live-server"
+    "msjsdiag.vscode-react-native"
+    "mtxr.sqltools"
+    "mtxr.sqltools-driver-mysql"
+    "mtxr.sqltools-driver-pg"
+    "mtxr.sqltools-driver-sqlite"
+    "pepeelpollo.pepe-csv-editor"
+    "pepeelpollo.pepe-ident"
+    "pepeelpollo.pepe-json-viewer"
+    "pepeelpollo.pepe-logs"
+    "pepeelpollo.purple-neon-pepe"
+    "pflannery.vscode-versionlens"
+    "pkief.material-icon-theme"
+    "pmneo.tsimporter"
+    "pranaygp.vscode-css-peek"
+    "prisma.prisma"
+    "purocean.drawio-preview"
+    "quicktype.quicktype"
+    "rafamel.subtle-brackets"
+    "redhat.vscode-yaml"
+    "sdras.night-owl"
+    "shopify.ruby-lsp"
+    "sirtori.indenticator"
+    "solnurkarim.html-to-css-autocompletion"
+    "sporiley.css-auto-prefix"
+    "stackbreak.comment-divider"
+    "streetsidesoftware.code-spell-checker"
+    "streetsidesoftware.code-spell-checker-spanish"
+    "tobermory.es6-string-html"
+    "tomoki1207.pdf"
+    "tyriar.lorem-ipsum"
+    "usernamehw.errorlens"
+    "vscodevim.vim"
+    "vue.volar"
+    "vunguyentuan.vscode-css-variables"
+    "wix.vscode-import-cost"
+    "xabikos.javascriptsnippets"
+    "yoavbls.pretty-ts-errors"
+    "zignd.html-css-class-completion"
+    "zitup.classnametocss"
+  )
+  for ext in "${CURSOR_EXTS[@]}"; do
+    cursor --install-extension "$ext" &>/dev/null || true
+  done
+  echo "  Extensiones de Cursor instaladas y actualizadas"
+fi
+
+fi
+
 # ---------- Fin ----------
 
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Ghostty + Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass (Aplicaciones GUI)"
+echo "  - Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass + Cursor + Google Chrome (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
@@ -2630,7 +3159,7 @@ echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
-echo "  - Claude Code + Antigravity CLI + Antigravity IDE + Graphify (asistentes de código con IA y grafo de conocimiento)"
+echo "  - Claude Code + Graphify (asistentes de código con IA y grafo de conocimiento)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
