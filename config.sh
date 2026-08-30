@@ -2593,6 +2593,58 @@ else
   brew install --cask warp
 fi
 
+log "Configurando tema Catppuccin Frappé y ajustes para Warp Terminal"
+WARP_CONFIG_DIR="$HOME/.warp"
+WARP_THEMES_DIR="$WARP_CONFIG_DIR/themes"
+mkdir -p "$WARP_THEMES_DIR"
+
+cat > "$WARP_THEMES_DIR/catppuccin_frappe.yml" <<'EOF_WARP_THEME'
+background: '#303446'
+accent: '#f2d5cf'
+foreground: '#c6d0f5'
+details: darker
+terminal_colors:
+  normal:
+    black: '#51576d'
+    red: '#e78284'
+    green: '#a6d189'
+    yellow: '#e5c890'
+    blue: '#8caaee'
+    magenta: '#f4b8e4'
+    cyan: '#81c8be'
+    white: '#b5bfe2'
+  bright:
+    black: '#626880'
+    red: '#e78284'
+    green: '#a6d189'
+    yellow: '#e5c890'
+    blue: '#8caaee'
+    magenta: '#f4b8e4'
+    cyan: '#81c8be'
+    white: '#a5adce'
+EOF_WARP_THEME
+
+if [ ! -f "$WARP_CONFIG_DIR/settings.toml" ]; then
+  cat > "$WARP_CONFIG_DIR/settings.toml" <<EOF_WARP_SETTINGS
+[appearance]
+[appearance.vertical_tabs]
+enabled = true
+
+[appearance.themes]
+system_theme = false
+theme = { custom = { name = "Catppuccin Frappe", path = "$HOME/.warp/themes/catppuccin_frappe.yml" } }
+
+[appearance.text]
+font_size = 13.0
+font_name = "JetBrainsMono Nerd Font Mono"
+
+[general]
+default_session_mode = "terminal"
+restore_session = true
+EOF_WARP_SETTINGS
+fi
+echo "  Ajustes y tema Catppuccin Frappé configurados en $WARP_CONFIG_DIR"
+
 log "Verificando Android Studio"
 if [ -d "/Applications/Android Studio.app" ] || brew list --cask android-studio &>/dev/null; then
   echo "  Android Studio OK, ya instalado"
@@ -3013,7 +3065,7 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "breadcrumbs.enabled": false,
   "workbench.editor.enablePreview": false,
   "workbench.editor.empty.hint": "hidden",
-  "workbench.editor.showTabs": "none",
+  "workbench.editor.showTabs": "multiple",
   "zenMode.centerLayout": false,
   "window.dialogStyle": "custom",
   "editor.scrollbar.horizontal": "hidden",
