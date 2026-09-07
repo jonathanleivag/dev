@@ -386,14 +386,22 @@ else
   echo "  zsh ya es tu shell por defecto"
 fi
 
-# ---------- 4. Fuente Nerd Font ----------
+# ---------- 4. Fuentes de Letras (Warp & Cursor) ----------
 
-log "Verificando fuente JetBrainsMono Nerd Font"
+log "Verificando fuente JetBrainsMono Nerd Font (usada por Warp Terminal)"
 if brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
-  echo "  Fuente OK, ya instalada"
+  echo "  JetBrainsMono Nerd Font OK, ya instalada"
 else
-  warn "Fuente no encontrada. Instalando..."
+  warn "JetBrainsMono Nerd Font no encontrada. Instalando..."
   brew install --cask font-jetbrains-mono-nerd-font
+fi
+
+log "Verificando fuente Victor Mono (usada por Cursor Editor & Neovim)"
+if brew list --cask font-victor-mono &>/dev/null; then
+  echo "  Victor Mono OK, ya instalada"
+else
+  warn "Victor Mono no encontrada. Instalando..."
+  brew install --cask font-victor-mono
 fi
 
 # ---------- 5. Shell: zsh plugins ----------
@@ -3105,6 +3113,14 @@ EOF_CURSOR_ST
 
 echo "  Ajustes y atajos de teclado creados en $CURSOR_USER_DIR"
 
+CURSOR_STATE_DB="$CURSOR_USER_DIR/globalStorage/state.vscdb"
+mkdir -p "$CURSOR_USER_DIR/globalStorage"
+if command -v sqlite3 &>/dev/null; then
+  sqlite3 "$CURSOR_STATE_DB" "CREATE TABLE IF NOT EXISTS ItemTable (key TEXT UNIQUE ON CONFLICT REPLACE, value TEXT);" 2>/dev/null || true
+  sqlite3 "$CURSOR_STATE_DB" "INSERT INTO ItemTable(key, value) VALUES('cursor/agentLayout.quickMenu.lastSelectedLayoutId', 'default-agent') ON CONFLICT(key) DO UPDATE SET value='default-agent';" 2>/dev/null || true
+  echo "  Layout predeterminado configurado en 'Agente' (Agent)"
+fi
+
 log "Instalando extensiones de Cursor (migradas desde Antigravity IDE)"
 if command -v cursor &>/dev/null; then
   CURSOR_EXTS=(
@@ -3175,6 +3191,7 @@ if command -v cursor &>/dev/null; then
     "quicktype.quicktype"
     "rafamel.subtle-brackets"
     "redhat.vscode-yaml"
+    "redis.redis-for-vscode"
     "sdras.night-owl"
     "shopify.ruby-lsp"
     "sirtori.indenticator"
@@ -3189,6 +3206,8 @@ if command -v cursor &>/dev/null; then
     "usernamehw.errorlens"
     "vscodevim.vim"
     "vue.volar"
+    "sdras.vue-vscode-snippets"
+    "Vue.vscode-typescript-vue-plugin"
     "vunguyentuan.vscode-css-variables"
     "wix.vscode-import-cost"
     "xabikos.javascriptsnippets"

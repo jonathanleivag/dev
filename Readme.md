@@ -103,7 +103,7 @@ Cursor queda preparado automáticamente con tus ajustes de trabajo e identidades
   * `Alt + Espacio`: Disparar autocompletado e IntelliSense.
   * `Cmd + G`: Git Graph view.
   * `Shift + Cmd + J`: Maximizar/Restaurar panel de terminal.
-* **Extensiones (80+ Plugins)**: Se instalan automáticamente plugins como Catppuccin, GitLens, Prettier, ESLint, Tailwind, Prisma, Volar, ErrorLens, Material Icon Theme, Python, Docker, SQLTools, MongoDB, etc.
+* **Extensiones (80+ Plugins)**: Se instalan automáticamente plugins como Catppuccin, GitLens, Prettier, ESLint, Tailwind, Prisma, Volar, Redis for VS Code, ErrorLens, Material Icon Theme, Python, Docker, SQLTools, MongoDB, etc.
 
 ## Harlequin SQL IDE & Atajos Vim
 
