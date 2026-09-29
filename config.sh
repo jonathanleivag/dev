@@ -121,7 +121,7 @@ if [ "$RUN_ALL" = "false" ]; then
 9. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
 10. Tmux & TPM Plugins
 11. Asistentes de IA CLI (Claude Code + Graphify)
-12. Aplicaciones GUI Casks (Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma, Antigravity, Antigravity IDE)
+12. Aplicaciones GUI Casks (Warp, Lens, Docker Desktop, Android Studio, Compass, Chrome, Claude Desktop, Redis Insight, Figma, Antigravity, Antigravity IDE)
 13. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
     )
@@ -2671,14 +2671,6 @@ else
   brew install --cask mongodb-compass
 fi
 
-log "Verificando Cursor (Editor de código con IA)"
-if [ -d "/Applications/Cursor.app" ] || brew list --cask cursor &>/dev/null; then
-  echo "  Cursor OK, ya instalado"
-else
-  warn "Cursor no encontrado. Instalando..."
-  brew install --cask cursor
-fi
-
 log "Configurando Google Chrome"
 if [ -d "/Applications/Google Chrome.app" ] || brew list --cask google-chrome &>/dev/null; then
   echo "  Google Chrome OK, ya instalado"
@@ -3262,7 +3254,7 @@ fi
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma + Antigravity + Antigravity IDE (Aplicaciones GUI)"
+echo "  - Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass + Google Chrome + Claude Desktop + Redis Insight + Figma + Antigravity + Antigravity IDE (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
