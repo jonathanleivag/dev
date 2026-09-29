@@ -666,6 +666,8 @@ append_once 'alias hq="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias hsql="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias harlequin="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias lsql="lazysql"' "$ZSHRC"
+append_once 'alias agy="open -a Antigravity"' "$ZSHRC"
+append_once 'alias code="agy-ide"' "$ZSHRC"
 
 # Alias de Colima & Docker
 append_once 'alias cos="colima start --cpu 2 --memory 4"' "$ZSHRC"

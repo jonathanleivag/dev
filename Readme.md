@@ -87,6 +87,8 @@ El script agrega estos alias a tu `.zshrc`:
 | `gg`  | —         | `lazygit`                                              |
 | `hq`  | —         | `harlequin-launcher` (selector de conexiones SQL)      |
 | `lsql`| —         | `lazysql`                                              |
+| `agy` | —         | `open -a Antigravity`                                  |
+| `code` | —        | `agy-ide` (abre Antigravity IDE)                       |
 | `lm`  | —         | `lazymongo`                                            |
 
 ## Atajos y Configuración de Cursor
