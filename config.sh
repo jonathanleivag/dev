@@ -8,7 +8,7 @@
 # zoxide/bat/eza + git config + pnpm + kubectl/k9s + Docker/lazydocker +
 # lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
 # prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
-# Claude Code + Antigravity CLI
+# Claude Code
 #
 # Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
 # nada existente. Es idempotente: puedes correrlo varias veces.
@@ -250,46 +250,12 @@ os:
   editPreset: 'nvim'
 
 customCommands:
-  # --- SECCIÓN DE ARCHIVOS (Files Panel) ---
-  # Generar commit automático con IA en INGLÉS y revisar/confirmar antes de hacer commit
-  - key: 'g'
-    command: >
-      git commit -e -m "$(git diff --cached | agy --dangerously-skip-permissions -p 'Analyze the staged git diff and generate a concise Conventional Commit message in ENGLISH in a single line. Return ONLY the commit message text, with no quotes, explanations or markdown formatting.')"
-    context: 'files'
-    loadingText: 'Generating AI commit message in English...'
-    subprocess: true
-
-  # Explicar los cambios del archivo seleccionado (staged y unstaged)
-  - key: 'x'
-    command: >
-      agy --dangerously-skip-permissions -p "Explica de forma concisa los cambios realizados en el archivo {{.SelectedFile.Name}}:\n\n$(git diff HEAD -- {{.SelectedFile.Name}})"
-    context: 'files'
-    loadingText: 'Explicando cambios del archivo con IA...'
-    subprocess: true
-
-  # --- SECCIÓN DE COMMITS (Commits Panel) ---
-  # Explicar los cambios y propósito del commit seleccionado
-  - key: 'x'
-    command: >
-      agy --dangerously-skip-permissions -p "Explica qué hace este commit y resume los cambios principales de forma concisa y directa:\n\n$(git show {{.SelectedLocalCommit.Hash}})"
-    context: 'commits'
-    loadingText: 'Analizando commit con IA...'
-    subprocess: true
-
   # --- SECCIÓN DE RAMAS (Local Branches Panel) ---
   # Copiar el nombre de la rama seleccionada al portapapeles con 'y'
   - key: 'y'
     command: 'printf "%s" {{.SelectedLocalBranch.Name | quote}} | pbcopy'
     context: 'localBranches'
     description: 'Copiar nombre de la rama local al portapapeles'
-
-  # Resumir todos los cambios de la rama seleccionada en comparación con main
-  - key: 'x'
-    command: >
-      agy --dangerously-skip-permissions -p "Resume los cambios realizados en la rama local '{{.SelectedLocalBranch.Name}}' en comparación con la rama principal (main):\n\n$(git diff main...{{.SelectedLocalBranch.Name}})"
-    context: 'localBranches'
-    loadingText: 'Resumiendo cambios de la rama con IA...'
-    subprocess: true
 
   # --- SECCIÓN DE RAMAS REMOTAS (Remote Branches Panel) ---
   # Copiar el nombre de la rama remota seleccionada al portapapeles con 'y'
@@ -702,30 +668,19 @@ append_once 'alias ld="lazydocker"' "$ZSHRC"
 if ! grep -q "ia()" "$ZSHRC" 2>/dev/null; then
   cat <<'EOF' >> "$ZSHRC"
 
-# ia: Abre un mosaico de terminales (mosaico tmux) con Antigravity (arriba) y Claude Code (abajo)
+# ia: Abre una ventana de tmux con Claude Code
 ia() {
   if [ -n "$TMUX" ]; then
     # Ya estamos dentro de una sesión de tmux: creamos una nueva ventana
-    local p1=$(tmux new-window -n "AI-Mosaic" -P -F "#{pane_id}" 'zsh')
-    # Dividimos verticalmente para crear el panel inferior (Claude)
-    local p2=$(tmux split-window -v -t "$p1" -P -F "#{pane_id}" 'zsh')
-    
-    # Enviamos los comandos correspondientes
-    tmux send-keys -t "$p1" 'agy' C-m
-    tmux send-keys -t "$p2" 'claude' C-m
-    tmux select-pane -t "$p2"
+    local p1=$(tmux new-window -n "AI" -P -F "#{pane_id}" 'zsh')
+    tmux send-keys -t "$p1" 'claude' C-m
   else
     # Fuera de tmux: creamos una nueva sesión o nos reconectamos a una existente
     if tmux has-session -t ia 2>/dev/null; then
       tmux attach-session -t ia
     else
-      local p1=$(tmux new-session -d -s ia -n "AI-Mosaic" -x "${COLUMNS:-200}" -y "${LINES:-50}" -P -F "#{pane_id}" 'zsh')
-      local p2=$(tmux split-window -v -t "$p1" -P -F "#{pane_id}" 'zsh')
-      
-      tmux send-keys -t "$p1" 'agy' C-m
-      tmux send-keys -t "$p2" 'claude' C-m
-      tmux select-pane -t "$p2"
-      
+      local p1=$(tmux new-session -d -s ia -n "AI" -x "${COLUMNS:-200}" -y "${LINES:-50}" -P -F "#{pane_id}" 'zsh')
+      tmux send-keys -t "$p1" 'claude' C-m
       tmux attach-session -t ia
     fi
   fi
@@ -3157,7 +3112,7 @@ if command -v sqlite3 &>/dev/null; then
   echo "  Layout predeterminado configurado en 'Agente' (Agent)"
 fi
 
-log "Instalando extensiones de Cursor (migradas desde Antigravity IDE)"
+log "Instalando extensiones de Cursor"
 if command -v cursor &>/dev/null; then
   CURSOR_EXTS=(
     "aaron-bond.better-comments"
