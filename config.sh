@@ -121,7 +121,7 @@ if [ "$RUN_ALL" = "false" ]; then
 9. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
 10. Tmux & TPM Plugins
 11. Asistentes de IA CLI (Claude Code + Graphify)
-12. Aplicaciones GUI Casks (Warp, Lens, Docker Desktop, Android Studio, Compass, Chrome, Claude Desktop, Redis Insight, Figma, Antigravity, Antigravity IDE)
+12. Aplicaciones GUI Casks (Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
 13. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
     )
@@ -351,6 +351,22 @@ if command -v corepack &>/dev/null; then
 else
   warn "corepack no encontrado (viene con Node 16.10+). Instalando pnpm como paquete global de npm en su lugar..."
   npm install -g pnpm
+fi
+
+if ! grep -qF "PNPM_HOME" "$ZSHRC" 2>/dev/null; then
+  cat >> "$ZSHRC" <<'EOF_PNPM'
+
+# pnpm
+export PNPM_HOME="$HOME/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME/bin:"*) ;;
+  *) export PATH="$PNPM_HOME/bin:$PATH" ;;
+esac
+# pnpm end
+EOF_PNPM
+  echo "  + PNPM_HOME agregado a $ZSHRC"
+else
+  echo "  OK, PNPM_HOME ya configurado en $ZSHRC"
 fi
 
 fi
@@ -662,12 +678,13 @@ append_once 'alias lazymongo="~/go/bin/lazymongo"' "$ZSHRC"
 append_once 'alias lezymongo="lazymongo"' "$ZSHRC"
 append_once 'alias lm="$HOME/go/bin/lazymongo"' "$ZSHRC"
 append_once 'alias tm="tmux-mosaic"' "$ZSHRC"
+append_once 'alias tmm="tmux-mosaic"' "$ZSHRC"
+append_once 'alias tmx="tmux-mosaic"' "$ZSHRC"
+append_once 'alias tm-mosaic="tmux-mosaic"' "$ZSHRC"
 append_once 'alias hq="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias hsql="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias harlequin="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias lsql="lazysql"' "$ZSHRC"
-append_once 'alias agy="open -a Antigravity"' "$ZSHRC"
-append_once 'alias code="agy-ide"' "$ZSHRC"
 
 # Alias de Colima & Docker
 append_once 'alias cos="colima start --cpu 2 --memory 4"' "$ZSHRC"
@@ -2671,6 +2688,15 @@ else
   brew install --cask mongodb-compass
 fi
 
+log "Verificando Cursor (Editor de código con IA)"
+if [ -d "/Applications/Cursor.app" ]; then
+  echo "  Cursor OK, ya instalado"
+else
+  warn "Cursor no encontrado. Instalando..."
+  brew install --cask cursor || brew reinstall --cask cursor
+fi
+append_once 'alias code="cursor"' "$ZSHRC"
+
 log "Configurando Google Chrome"
 if [ -d "/Applications/Google Chrome.app" ] || brew list --cask google-chrome &>/dev/null; then
   echo "  Google Chrome OK, ya instalado"
@@ -2701,22 +2727,6 @@ if [ -d "/Applications/Figma.app" ] || brew list --cask figma &>/dev/null; then
 else
   warn "Figma no encontrado. Instalando..."
   brew install --cask figma
-fi
-
-log "Verificando Google Antigravity (plataforma de agentes)"
-if [ -d "/Applications/Antigravity.app" ] || brew list --cask antigravity &>/dev/null; then
-  echo "  Antigravity OK, ya instalado"
-else
-  warn "Antigravity no encontrado. Instalando..."
-  brew install --cask antigravity
-fi
-
-log "Verificando Google Antigravity IDE"
-if [ -d "/Applications/Antigravity IDE.app" ] || brew list --cask antigravity-ide &>/dev/null; then
-  echo "  Antigravity IDE OK, ya instalado"
-else
-  warn "Antigravity IDE no encontrado. Instalando..."
-  brew install --cask antigravity-ide
 fi
 
 fi
@@ -3254,7 +3264,7 @@ fi
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass + Google Chrome + Claude Desktop + Redis Insight + Figma + Antigravity + Antigravity IDE (Aplicaciones GUI)"
+echo "  - Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
