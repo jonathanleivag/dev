@@ -2790,11 +2790,6 @@ cat > "$CURSOR_USER_DIR/keybindings.json" <<'EOF_CURSOR_KB'
     "when": "editorTextFocus"
   },
   {
-    "key": "ctrl+cmd+c",
-    "command": "editor.unfoldAll",
-    "when": "editorTextFocus"
-  },
-  {
     "key": "shift+cmd+t",
     "command": "-workbench.action.reopenClosedEditor"
   },
@@ -2911,6 +2906,14 @@ cat > "$CURSOR_USER_DIR/keybindings.json" <<'EOF_CURSOR_KB'
     "key": "shift+cmd+j",
     "command": "workbench.action.toggleMaximizedPanel",
     "when": "panelAlignment == 'center' || panelPosition != 'bottom' && panelPosition != 'top'"
+  },
+  {
+    "key": "ctrl+cmd+c",
+    "command": "chatgpt.sidebarSecondaryView.focus"
+  },
+  {
+    "key": "alt+cmd+c",
+    "command": "claudeVSCodeSessionsList.focus"
   }
 ]
 EOF_CURSOR_KB
@@ -2933,16 +2936,16 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
       {
         "scope": "punctuation.definition.template-expression",
         "settings": {
-          "foreground": "#fa2b7d"
-        }
+          "foreground": "#fa2b7d",
+        },
       },
       {
         "scope": "meta.template.expression",
         "settings": {
-          "foreground": "#dcdcdc"
-        }
-      }
-    ]
+          "foreground": "#dcdcdc",
+        },
+      },
+    ],
   },
   "editor.wordBasedSuggestions": "off",
   "editor.scrollbar.vertical": "hidden",
@@ -2951,6 +2954,7 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "editor.rulers": [],
   "editor.wordWrapColumn": 80,
   "editor.minimap.maxColumn": 50,
+  "editor.minimap.enabled": true,
   "editor.formatOnType": false,
   "explorer.confirmDelete": true,
   "explorer.confirmDragAndDrop": true,
@@ -2962,18 +2966,18 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "search.exclude": {
     "**/node_modules": true,
     "**/.next": true,
-    "**/bower_components": true
+    "**/bower_components": true,
   },
   "git.autofetch": true,
   "git.ignoreRebaseWarning": true,
   "gitlens.advanced.messages": {
-    "suppressGitDisabledWarning": true
+    "suppressGitDisabledWarning": true,
   },
   "files.trimTrailingWhitespace": true,
   "files.exclude": {
     ".next": false,
     "node_modules": false,
-    ".idea": false
+    ".idea": false,
   },
   "liveServer.settings.port": 3000,
   "liveServer.settings.donotVerifyTags": true,
@@ -2987,7 +2991,7 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "markdown.preview.linkify": true,
   "markdown.preview.typographer": true,
   "markdown.validate.enabled": true,
-  "editor.matchBrackets": false,
+  "editor.matchBrackets": "never",
   "typescript.updateImportsOnFileMove.enabled": "always",
   "typescript.suggest.autoImports": true,
   "typescript.inlayHints.parameterNames.enabled": "all",
@@ -3006,15 +3010,13 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "editor.accessibilitySupport": "off",
   "editor.bracketPairColorization.enabled": true,
   "editor.linkedEditing": true,
-  "errorLens.excludeBySource": [
-    "dart(file_names)"
-  ],
+  "errorLens.excludeBySource": ["dart(file_names)"],
   "workbench.activityBar.location": "top",
   "gitlens.graph.minimap.additionalTypes": [
     "localBranches",
     "stashes",
     "remoteBranches",
-    "tags"
+    "tags",
   ],
   "security.promptForLocalFileProtocolHandling": false,
   "diffEditor.ignoreTrimWhitespace": false,
@@ -3047,9 +3049,7 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "editor.gotoLocation.multipleImplementations": "goto",
   "editor.gotoLocation.multipleTypeDefinitions": "goto",
   "editor.wordWrap": "on",
-  "cSpell.userWords": [
-    "jonathanleivagomez"
-  ],
+  "cSpell.userWords": ["jonathanleivagomez"],
   "terminal.integrated.minimumContrastRatio": 1,
   "terminal.explorerKind": "integrated",
   "workbench.settings.editor": "json",
@@ -3059,35 +3059,41 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "workbench.tips.enabled": false,
   "workbench.view.alwaysShowHeaderActions": true,
   "workbench.view.showQuietly": {
-    "workbench.panel.output": false
+    "workbench.panel.output": false,
   },
   "breadcrumbs.enabled": false,
-  "workbench.editor.enablePreview": false,
   "workbench.editor.empty.hint": "hidden",
+  "workbench.editor.enablePreview": false,
   "workbench.editor.showTabs": "multiple",
   "zenMode.centerLayout": false,
   "window.dialogStyle": "custom",
   "editor.scrollbar.horizontal": "hidden",
-  "editor.minimap.enabled": true,
-  "editor.minimap.autohide": "none",
+  "editor.minimap.autohide": "mouseover",
   "workbench.startupEditor": "readme",
   "terminal.external.osxExec": "Warp.app",
   "terminal.integrated.env.osx": {},
   "workbench.sideBar.location": "right",
   "workbench.colorCustomizations": {},
   "redhat.telemetry.enabled": true,
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false,
+    "markdown": false,
+    "scminput": false,
+  },
   "diffEditor.codeLens": true,
   "[dockercompose]": {
     "editor.insertSpaces": true,
     "editor.tabSize": 2,
     "editor.autoIndent": "advanced",
-    "editor.defaultFormatter": "redhat.vscode-yaml"
+    "editor.defaultFormatter": "redhat.vscode-yaml",
   },
   "[github-actions-workflow]": {
-    "editor.defaultFormatter": "redhat.vscode-yaml"
+    "editor.defaultFormatter": "redhat.vscode-yaml",
   },
   "[typescript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
+    "editor.defaultFormatter": "vscode.typescript-language-features",
   },
   "terminal.integrated.inheritEnv": true,
   "claudeCode.preferredLocation": "panel",
@@ -3098,7 +3104,7 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "typescript.experimental.useTsgo": true,
   "window.commandCenter": false,
   "workbench.quickOpen.closeOnFocusLost": false,
-  "workbench.layoutControl.enabled": true
+  "workbench.layoutControl.enabled": false,
 }
 EOF_CURSOR_ST
 
@@ -3205,6 +3211,16 @@ if command -v cursor &>/dev/null; then
     "yoavbls.pretty-ts-errors"
     "zignd.html-css-class-completion"
     "zitup.classnametocss"
+    "cweijan.dbclient-jdbc"
+    "meta.pyrefly"
+    "ms-azuretools.vscode-containers"
+    "ms-toolsai.jupyter-keymap"
+    "ms-toolsai.jupyter-renderers"
+    "ms-toolsai.vscode-jupyter-cell-tags"
+    "ms-toolsai.vscode-jupyter-slideshow"
+    "ms-vscode.vscode-typescript-next"
+    "openai.chatgpt"
+    "prisma.prisma-insider"
   )
   for ext in "${CURSOR_EXTS[@]}"; do
     cursor --install-extension "$ext" &>/dev/null || true
