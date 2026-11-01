@@ -3,12 +3,12 @@
 # setup-terminal-stack.sh
 #
 # Instalación reproducible del stack de terminal:
-# Warp (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
+# Ghostty y Warp (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
 # zoxide/bat/eza + git config + pnpm + kubectl/k9s + Docker/lazydocker +
 # lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
 # prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
-# Claude Code
+# Claude Code + Cursor CLI
 #
 # Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
 # nada existente. Es idempotente: puedes correrlo varias veces.
@@ -120,8 +120,8 @@ if [ "$RUN_ALL" = "false" ]; then
 8. MongoDB Tools (Lazymongo + mongosh + vi-mongo + alias mgo)
 9. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
 10. Tmux & TPM Plugins
-11. Asistentes de IA CLI (Claude Code + Graphify)
-12. Aplicaciones GUI Casks (Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
+11. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify)
+12. Aplicaciones GUI Casks (Ghostty, Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
 13. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
     )
@@ -250,13 +250,81 @@ os:
   editPreset: 'nvim'
 
 customCommands:
+  # --- SECCIÓN DE ARCHIVOS (Files Panel) ---
+  # Generar commit automático con IA en INGLÉS y revisar/confirmar antes de hacer commit
+  - key: 'g'
+    command: >
+      git commit -e -m "$(git diff --cached | agy --dangerously-skip-permissions -p 'Analyze the staged git diff and generate a concise Conventional Commit message in ENGLISH in a single line. Return ONLY the commit message text, with no quotes, explanations or markdown formatting.')"
+
+    context: 'files'
+    description: 'Crear mensaje de commit con agy'
+    loadingText: 'Generating AI commit message in English...'
+    output: terminal
+  # Mensaje de commit con Cursor Agent. El diff va en el prompt: agent no lee stdin.
+  - key: 'G'
+    context: 'files'
+    description: 'Crear mensaje de commit con Cursor Agent'
+    loadingText: 'Generando mensaje de commit con Cursor Agent...'
+    output: terminal
+    command: |
+      set +e
+      diff_content="$(git diff --cached --stat; printf '\n'; git diff --cached -U2 | head -c 8000)"
+      if [ -z "$diff_content" ]; then
+        echo "No hay cambios en stage. Márcalos con espacio y vuelve a pulsar G."
+        exit 1
+      fi
+      agent_bin="$(command -v agent || command -v cursor-agent || true)"
+      if [ -z "$agent_bin" ] && [ -x "$HOME/.local/bin/agent" ]; then
+        agent_bin="$HOME/.local/bin/agent"
+      fi
+      if [ -z "$agent_bin" ]; then
+        echo "Cursor Agent no está instalado (comando agent)."
+        exit 1
+      fi
+      echo "Generando mensaje con Cursor Agent..."
+      msg="$(
+        "$agent_bin" --print --mode ask --trust --model composer-2.5-fast "$(printf '%s\n\n%s' \
+          'Generate a concise Conventional Commit message in ENGLISH in a single line. Return ONLY the commit message text, with no quotes, explanations or markdown formatting. Staged git diff:' \
+          "$diff_content")"
+      )"
+      status=$?
+      msg="$(printf '%s\n' "$msg" | awk 'NF { print; exit }')"
+      if [ "$status" -ne 0 ] || [ -z "$msg" ]; then
+        echo "Cursor Agent no devolvió un mensaje de commit."
+        exit 1
+      fi
+      git commit -e -m "$msg"
+  # Explicar los cambios del archivo seleccionado (staged y unstaged)
+  - key: 'x'
+    command: >
+      agy --dangerously-skip-permissions -p "Explica de forma concisa los cambios realizados en el archivo {{.SelectedFile.Name}}:\n\n$(git diff HEAD -- {{.SelectedFile.Name}})"
+
+    context: 'files'
+    loadingText: 'Explicando cambios del archivo con IA...'
+    output: terminal
+  # --- SECCIÓN DE COMMITS (Commits Panel) ---
+  # Explicar los cambios y propósito del commit seleccionado
+  - key: 'x'
+    command: >
+      agy --dangerously-skip-permissions -p "Explica qué hace este commit y resume los cambios principales de forma concisa y directa:\n\n$(git show {{.SelectedLocalCommit.Hash}})"
+
+    context: 'commits'
+    loadingText: 'Analizando commit con IA...'
+    output: terminal
   # --- SECCIÓN DE RAMAS (Local Branches Panel) ---
   # Copiar el nombre de la rama seleccionada al portapapeles con 'y'
   - key: 'y'
     command: 'printf "%s" {{.SelectedLocalBranch.Name | quote}} | pbcopy'
     context: 'localBranches'
     description: 'Copiar nombre de la rama local al portapapeles'
+  # Resumir todos los cambios de la rama seleccionada en comparación con main
+  - key: 'x'
+    command: >
+      agy --dangerously-skip-permissions -p "Resume los cambios realizados en la rama local '{{.SelectedLocalBranch.Name}}' en comparación con la rama principal (main):\n\n$(git diff main...{{.SelectedLocalBranch.Name}})"
 
+    context: 'localBranches'
+    loadingText: 'Resumiendo cambios de la rama con IA...'
+    output: terminal
   # --- SECCIÓN DE RAMAS REMOTAS (Remote Branches Panel) ---
   # Copiar el nombre de la rama remota seleccionada al portapapeles con 'y'
   - key: 'y'
@@ -368,9 +436,9 @@ else
   echo "  zsh ya es tu shell por defecto"
 fi
 
-# ---------- 4. Fuentes de Letras (Warp & Cursor) ----------
+# ---------- 4. Fuentes de Letras (Ghostty, Warp & Cursor) ----------
 
-log "Verificando fuente JetBrainsMono Nerd Font (usada por Warp Terminal)"
+log "Verificando fuente JetBrainsMono Nerd Font (usada por Ghostty y Warp)"
 if brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
   echo "  JetBrainsMono Nerd Font OK, ya instalada"
 else
@@ -2362,22 +2430,27 @@ bind c new-window -c "#{pane_current_path}"
 # Recargar config con prefix + r
 bind r source-file ~/.tmux.conf \; display "Config recargada"
 
-# Navegación de paneles estilo vim (h j k l)
+# Navegación de paneles del mosaico por dirección: Ctrl-a, luego h/j/k/l
 bind h select-pane -L
 bind j select-pane -D
 bind k select-pane -U
 bind l select-pane -R
 
-# Moverse entre paneles con Prefix + Número (Ctrl+a 1-9)
-bind-key 1 select-pane -t 1
-bind-key 2 select-pane -t 2
-bind-key 3 select-pane -t 3
-bind-key 4 select-pane -t 4
-bind-key 5 select-pane -t 5
-bind-key 6 select-pane -t 6
-bind-key 7 select-pane -t 7
-bind-key 8 select-pane -t 8
-bind-key 9 select-pane -t 9
+# Saltar a un panel del mosaico por su número: Ctrl-a, q, luego el número
+# que aparece (coincide con "Panel N" del borde). No usar 1-9 solos: eso cambia de ventana.
+bind q display-panes
+set -g display-panes-time 3000
+
+# Moverse entre ventanas (pestañas), no entre paneles del mosaico: Ctrl-a, luego 1-9
+bind-key 1 select-window -t 1
+bind-key 2 select-window -t 2
+bind-key 3 select-window -t 3
+bind-key 4 select-window -t 4
+bind-key 5 select-window -t 5
+bind-key 6 select-window -t 6
+bind-key 7 select-window -t 7
+bind-key 8 select-window -t 8
+bind-key 9 select-window -t 9
 
 # Mostrar el número y nombre del proyecto en el borde superior de cada panel
 set -g pane-border-status top
@@ -2529,7 +2602,20 @@ else
   brew install --cask claude-code
 fi
 
-
+log "Verificando Cursor CLI (agent)"
+if command -v agent &>/dev/null || command -v cursor-agent &>/dev/null || brew list --cask cursor-cli &>/dev/null; then
+  echo "  Cursor CLI OK, ya instalado"
+else
+  warn "Cursor CLI no encontrado. Instalando..."
+  brew install --cask cursor-cli
+fi
+# El cask deja `cursor-agent` en el PATH. El comando documentado es `agent`.
+if ! command -v agent &>/dev/null && command -v cursor-agent &>/dev/null; then
+  mkdir -p "$HOME/.local/bin"
+  ln -sf "$(command -v cursor-agent)" "$HOME/.local/bin/agent"
+  append_once 'export PATH="$HOME/.local/bin:$PATH"' "$ZSHRC"
+  echo "  Enlace agent -> cursor-agent creado en $HOME/.local/bin"
+fi
 
 log "Verificando Graphify (Knowledge Graph para asistentes de IA)"
 if command -v graphify &>/dev/null; then
@@ -2567,6 +2653,30 @@ else
   brew install --cask docker
 fi
 
+log "Verificando Ghostty (Terminal)"
+if [ -d "/Applications/Ghostty.app" ] || brew list --cask ghostty &>/dev/null; then
+  echo "  Ghostty OK, ya instalado"
+else
+  warn "Ghostty no encontrado. Instalando..."
+  brew install --cask ghostty
+fi
+
+log "Configurando tema Catppuccin Frappé y fuente para Ghostty"
+# En macOS este archivo tiene prioridad sobre ~/.config/ghostty/config.ghostty
+GHOSTTY_CONFIG_MACOS="$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty"
+GHOSTTY_CONFIG_XDG="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config.ghostty"
+if [ -f "$GHOSTTY_CONFIG_MACOS" ] || [ -f "$GHOSTTY_CONFIG_XDG" ]; then
+  warn "Config de Ghostty ya existe, no se toca"
+else
+  mkdir -p "$(dirname "$GHOSTTY_CONFIG_MACOS")"
+  cat > "$GHOSTTY_CONFIG_MACOS" <<'EOF_GHOSTTY'
+font-family = JetBrainsMono Nerd Font Mono
+font-size = 13
+theme = Catppuccin Frappe
+EOF_GHOSTTY
+  echo "  Tema Catppuccin Frappé y fuente configurados en $GHOSTTY_CONFIG_MACOS"
+fi
+
 log "Verificando Warp (Terminal)"
 if [ -d "/Applications/Warp.app" ] || brew list --cask warp &>/dev/null; then
   echo "  Warp OK, ya instalado"
@@ -2575,12 +2685,16 @@ else
   brew install --cask warp
 fi
 
-log "Configurando tema Catppuccin Frappé y ajustes para Warp Terminal"
+log "Configurando tema Catppuccin Frappé y ajustes para Warp"
 WARP_CONFIG_DIR="$HOME/.warp"
 WARP_THEMES_DIR="$WARP_CONFIG_DIR/themes"
-mkdir -p "$WARP_THEMES_DIR"
-
-cat > "$WARP_THEMES_DIR/catppuccin_frappe.yml" <<'EOF_WARP_THEME'
+WARP_THEME_FILE="$WARP_THEMES_DIR/catppuccin_frappe.yml"
+WARP_SETTINGS_FILE="$WARP_CONFIG_DIR/settings.toml"
+if [ -f "$WARP_THEME_FILE" ] || [ -f "$WARP_SETTINGS_FILE" ]; then
+  warn "Config de Warp ya existe, no se toca"
+else
+  mkdir -p "$WARP_THEMES_DIR"
+  cat > "$WARP_THEME_FILE" <<'EOF_WARP_THEME'
 background: '#303446'
 accent: '#f2d5cf'
 foreground: '#c6d0f5'
@@ -2605,9 +2719,7 @@ terminal_colors:
     cyan: '#81c8be'
     white: '#a5adce'
 EOF_WARP_THEME
-
-if [ ! -f "$WARP_CONFIG_DIR/settings.toml" ]; then
-  cat > "$WARP_CONFIG_DIR/settings.toml" <<EOF_WARP_SETTINGS
+  cat > "$WARP_SETTINGS_FILE" <<EOF_WARP_SETTINGS
 [appearance]
 [appearance.vertical_tabs]
 enabled = true
@@ -2624,8 +2736,8 @@ font_name = "JetBrainsMono Nerd Font Mono"
 default_session_mode = "terminal"
 restore_session = true
 EOF_WARP_SETTINGS
+  echo "  Tema Catppuccin Frappé y fuente configurados en $WARP_CONFIG_DIR"
 fi
-echo "  Ajustes y tema Catppuccin Frappé configurados en $WARP_CONFIG_DIR"
 
 log "Verificando Android Studio"
 if [ -d "/Applications/Android Studio.app" ] || brew list --cask android-studio &>/dev/null; then
@@ -3070,7 +3182,7 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "editor.scrollbar.horizontal": "hidden",
   "editor.minimap.autohide": "mouseover",
   "workbench.startupEditor": "readme",
-  "terminal.external.osxExec": "Warp.app",
+  "terminal.external.osxExec": "Ghostty.app",
   "terminal.integrated.env.osx": {},
   "workbench.sideBar.location": "right",
   "workbench.colorCustomizations": {},
@@ -3235,7 +3347,7 @@ fi
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
+echo "  - Ghostty + Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
@@ -3246,7 +3358,7 @@ echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
-echo "  - Claude Code + Graphify (asistentes de código con IA y grafo de conocimiento)"
+echo "  - Claude Code + Cursor CLI (agent) + Graphify (asistentes de código con IA y grafo de conocimiento)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."

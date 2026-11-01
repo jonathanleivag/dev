@@ -40,16 +40,16 @@ o simplemente cierra y abre una terminal nueva.
 | Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                       |
 | Prompt             | Starship (git branch/status, node, duración de comandos, máquina actual)                              |
 | CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`), lazygit (`gg` con `y` para copiar rama)          |
-| Terminal           | Warp                                                                                                   |
+| Terminal           | Ghostty y Warp (tema Catppuccin Frappé, JetBrainsMono Nerd Font)                                       |
 | Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
-| Asistentes de IA   | Claude Code, Graphify (Knowledge Graph para IA)                                                        |
+| Asistentes de IA   | Claude Code, Cursor CLI (`agent`), Graphify (Knowledge Graph para IA)                                 |
 | Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                    |
 | Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                            |
 | Bases relacionales | Harlequin SQL IDE (con atajos Vim y perfiles guardados) + lazysql                                      |
 | MongoDB            | lazymongo, vi-mongo, mongosh, conexiones nombradas (`mgo <nombre>`)                                    |
 | Editor Terminal    | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado)   |
 | Editor GUI         | Cursor (configuración, atajos de teclado y 80+ extensiones migradas)                                    |
-| Apps GUI (Casks)   | Warp, Lens, Docker Desktop, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop, Redis Insight, Figma |
+| Apps GUI (Casks)   | Ghostty, Warp, Lens, Docker Desktop, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop, Redis Insight, Figma |
 
 Nada de esto borra o reemplaza tus datos — todo corre de forma idempotente y segura.
 
@@ -67,8 +67,8 @@ Al ejecutar `./config.sh`, puedes activar o desactivar cualquiera de los 13 mód
 8. **MongoDB Tools**: `lazymongo`, `mongosh`, `vi-mongo`, alias `mgo`.
 9. **Neovim & LazyVim**: Configuración completa en `~/.config/nvim`, LSPs, Mergetool 3-way.
 10. **Tmux & TPM**: `~/.tmux.conf` + TPM + plugins de resurgimiento de sesión.
-11. **Asistentes de IA CLI**: Claude Code, Graphify.
-12. **Aplicaciones GUI (Casks)**: Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma.
+11. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify.
+12. **Aplicaciones GUI (Casks)**: Ghostty, Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma.
 13. **Cursor Editor**: Sincronización automática de `settings.json`, `keybindings.json` e instalación de 80+ extensiones.
 
 ## Alias de CLI moderna
@@ -142,7 +142,9 @@ El script instala tmux con una config lista para usar (`~/.tmux.conf`) y **TPM**
 
 - **Prefix:** `Ctrl-a` (en vez del default `Ctrl-b`)
 - **Splits:** `prefix + |` (vertical), `prefix + -` (horizontal)
-- **Navegación:** `prefix + h/j/k/l`
+- **Paneles del mosaico por dirección:** `prefix + h/j/k/l`
+- **Panel del mosaico por número:** `prefix + q`, luego el número que aparece (coincide con `Panel N` del borde)
+- **Ventanas (pestañas):** `prefix + 1-9`. Eso no entra a un panel del mosaico.
 - **Plugins incluidos:** `tmux-sensible`, `tmux-resurrect`, `tmux-continuum`
 
 Primera vez: abre `tmux` y presiona `prefix + I` (Ctrl-a, `I`).
