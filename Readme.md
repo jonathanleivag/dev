@@ -1,6 +1,6 @@
 # Stack de terminal — Jonathan
 
-Configuración reproducible para migrar de entorno gráfico (VSCode/Antigravity, Lens, Docker Desktop) a un flujo 100% en terminal y optimizado para desarrollo con Cursor, en cualquier Mac (Apple Silicon o Intel).
+Configuración reproducible para migrar de entorno gráfico (VSCode/Antigravity, Lens) a un flujo 100% en terminal y optimizado para desarrollo con Cursor, en cualquier Mac (Apple Silicon o Intel).
 
 ## Contenido
 
@@ -40,36 +40,34 @@ o simplemente cierra y abre una terminal nueva.
 | Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                       |
 | Prompt             | Starship (git branch/status, node, duración de comandos, máquina actual)                              |
 | CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`), lazygit (`gg` con `y` para copiar rama)          |
-| Terminal           | Ghostty y Warp (tema Catppuccin Frappé, JetBrainsMono Nerd Font)                                       |
+| Terminal           | Warp (tema Catppuccin Frappé, JetBrainsMono Nerd Font)                                                 |
 | Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
 | Asistentes de IA   | Claude Code, Cursor CLI (`agent`), Graphify (Knowledge Graph para IA)                                 |
 | Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                    |
-| Docker             | lazydocker (+ valida que Docker esté instalado y corriendo)                                            |
 | Bases relacionales | Harlequin SQL IDE (con atajos Vim y perfiles guardados) + lazysql                                      |
 | MongoDB            | lazymongo, vi-mongo, mongosh, conexiones nombradas (`mgo <nombre>`)                                    |
 | Editor Terminal    | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado)   |
 | Editor GUI         | Cursor (configuración, atajos de teclado y 80+ extensiones migradas)                                    |
-| Apps GUI (Casks)   | Ghostty, Warp, Lens, Docker Desktop, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop, Redis Insight, Figma |
+| Apps GUI (Casks)   | Warp, Lens, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop, Redis Insight, Figma |
 
 Nada de esto borra o reemplaza tus datos — todo corre de forma idempotente y segura.
 
 ## Menú Interactivo de Módulos
 
-Al ejecutar `./config.sh`, puedes activar o desactivar cualquiera de los 13 módulos:
+Al ejecutar `./config.sh`, puedes activar o desactivar cualquiera de los 12 módulos:
 
 1. **Git & GitHub CLI**: Identidades por carpeta (personal/trabajo) y `gh`.
 2. **Node.js**: NVM + Node.js LTS + pnpm (vía Corepack).
 3. **Zsh Plugins, Fuente & Starship Prompt**: Completions, fzf-tab, autosuggestions, JetBrainsMono Nerd Font.
 4. **Herramientas CLI**: `zoxide` (`cd`), `bat` (`cat`), `eza` (`ls`/`ll`/`lt`), `speedtest`.
 5. **Kubernetes Tools**: `kubectl`, `k9s`, `kubectx`, `kubens`, `stern`.
-6. **Docker Tools**: `colima`, `docker`, `lazydocker`.
-7. **Bases de Datos SQL**: Harlequin SQL IDE (perfil `vicidial prod`) y `lazysql`.
-8. **MongoDB Tools**: `lazymongo`, `mongosh`, `vi-mongo`, alias `mgo`.
-9. **Neovim & LazyVim**: Configuración completa en `~/.config/nvim`, LSPs, Mergetool 3-way.
-10. **Tmux & TPM**: `~/.tmux.conf` + TPM + plugins de resurgimiento de sesión.
-11. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify.
-12. **Aplicaciones GUI (Casks)**: Ghostty, Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma.
-13. **Cursor Editor**: Sincronización automática de `settings.json`, `keybindings.json` e instalación de 80+ extensiones.
+6. **Bases de Datos SQL**: Harlequin SQL IDE (perfil `vicidial prod`) y `lazysql`.
+7. **MongoDB Tools**: `lazymongo`, `mongosh`, `vi-mongo`, alias `mgo`.
+8. **Neovim & LazyVim**: Configuración completa en `~/.config/nvim`, LSPs, Mergetool 3-way.
+9. **Tmux & TPM**: `~/.tmux.conf` + TPM + plugins de resurgimiento de sesión.
+10. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify.
+11. **Aplicaciones GUI (Casks)**: Warp, Lens, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma.
+12. **Cursor Editor**: Sincronización automática de `settings.json`, `keybindings.json` e instalación de 80+ extensiones.
 
 ## Alias de CLI moderna
 
@@ -103,7 +101,7 @@ Cursor queda preparado automáticamente con tus ajustes de trabajo e identidades
   * `Alt + Espacio`: Disparar autocompletado e IntelliSense.
   * `Cmd + G`: Git Graph view.
   * `Shift + Cmd + J`: Maximizar/Restaurar panel de terminal.
-* **Extensiones (80+ Plugins)**: Se instalan automáticamente plugins como Catppuccin, GitLens, Prettier, ESLint, Tailwind, Prisma, Volar, Redis for VS Code, ErrorLens, Material Icon Theme, Python, Docker, SQLTools, MongoDB, etc.
+* **Extensiones (80+ Plugins)**: Se instalan automáticamente plugins como Catppuccin, GitLens, Prettier, ESLint, Tailwind, Prisma, Volar, Redis for VS Code, ErrorLens, Material Icon Theme, Python, SQLTools, MongoDB, etc.
 
 ## Harlequin SQL IDE & Atajos Vim
 

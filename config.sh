@@ -3,9 +3,9 @@
 # setup-terminal-stack.sh
 #
 # Instalación reproducible del stack de terminal:
-# Ghostty y Warp (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
+# Warp (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
-# zoxide/bat/eza + git config + pnpm + kubectl/k9s + Docker/lazydocker +
+# zoxide/bat/eza + git config + pnpm + kubectl/k9s +
 # lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
 # prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
 # Claude Code + Cursor CLI
@@ -115,14 +115,13 @@ if [ "$RUN_ALL" = "false" ]; then
 3. Zsh Plugins, Fuente Nerd Font & Starship Prompt
 4. Herramientas CLI (zoxide, bat, eza, fd, ripgrep, speedtest)
 5. Kubernetes Tools (kubectl, k9s, kubectx, stern)
-6. Docker Tools (Colima, Docker CLI, lazydocker)
-7. Bases de Datos SQL (Harlequin + Lazysql)
-8. MongoDB Tools (Lazymongo + mongosh + vi-mongo + alias mgo)
-9. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
-10. Tmux & TPM Plugins
-11. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify)
-12. Aplicaciones GUI Casks (Ghostty, Warp, Lens, Docker Desktop, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
-13. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
+6. Bases de Datos SQL (Harlequin + Lazysql)
+7. MongoDB Tools (Lazymongo + mongosh + vi-mongo + alias mgo)
+8. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
+9. Tmux & TPM Plugins
+10. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify)
+11. Aplicaciones GUI Casks (Warp, Lens, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
+12. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
     )
     if [ -z "$SELECTED_MODULES" ]; then
@@ -436,9 +435,9 @@ else
   echo "  zsh ya es tu shell por defecto"
 fi
 
-# ---------- 4. Fuentes de Letras (Ghostty, Warp & Cursor) ----------
+# ---------- 4. Fuentes de Letras (Warp & Cursor) ----------
 
-log "Verificando fuente JetBrainsMono Nerd Font (usada por Ghostty y Warp)"
+log "Verificando fuente JetBrainsMono Nerd Font (usada por Warp)"
 if brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
   echo "  JetBrainsMono Nerd Font OK, ya instalada"
 else
@@ -720,19 +719,6 @@ append_once 'alias hsql="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias harlequin="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias lsql="lazysql"' "$ZSHRC"
 
-# Alias de Colima & Docker
-append_once 'alias cos="colima start --cpu 2 --memory 4"' "$ZSHRC"
-append_once 'alias cox="colima stop"' "$ZSHRC"
-append_once 'alias coh="colima status"' "$ZSHRC"
-append_once 'alias d="docker"' "$ZSHRC"
-append_once 'alias dc="docker compose"' "$ZSHRC"
-append_once 'alias dps="docker ps --format '\''table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Ports}}'\''"' "$ZSHRC"
-append_once 'alias di="docker images"' "$ZSHRC"
-append_once 'alias dexec="docker exec -it"' "$ZSHRC"
-append_once 'alias dlogs="docker logs -f"' "$ZSHRC"
-append_once 'alias dclean="docker system prune -a --volumes"' "$ZSHRC"
-append_once 'alias ld="lazydocker"' "$ZSHRC"
-
 if ! grep -q "ia()" "$ZSHRC" 2>/dev/null; then
   cat <<'EOF' >> "$ZSHRC"
 
@@ -951,150 +937,6 @@ fi
 fi
 
 if should_run 6; then
-# ---------- 9. Colima & Docker ----------
-
-log "Verificando Colima (Docker sin Docker Desktop)"
-if command -v colima &>/dev/null; then
-  echo "  Colima OK ($(colima version | head -n 1))"
-else
-  warn "Colima no encontrado. Instalando Colima y Docker CLI..."
-  brew install colima docker docker-buildx
-  # Configurar plugin de buildx para que Docker lo reconozca
-  mkdir -p "$HOME/.docker/cli-plugins"
-  ln -sfn "$(brew --prefix)/opt/docker-buildx/bin/docker-buildx" "$HOME/.docker/cli-plugins/docker-buildx"
-fi
-
-log "Verificando si Colima está corriendo"
-if colima status &>/dev/null; then
-  echo "  Colima está corriendo y el socket de Docker está activo."
-else
-  warn "Colima no está iniciado. Iniciando Colima..."
-  # Iniciamos Colima con recursos balanceados (2 CPUs, 4GB RAM)
-  colima start --cpu 2 --memory 4
-fi
-
-log "Verificando Docker Daemon"
-if docker info &>/dev/null; then
-  echo "  Docker daemon responde correctamente."
-else
-  warn "El daemon de Docker no responde. Intenta ejecutar 'colima start' manualmente."
-fi
-
-log "Instalando lazydocker"
-brew install lazydocker
-
-log "Configurando dbx (función Zsh para compilar Docker local y multi-plataforma)"
-if ! grep -qF "dbx: Compilar imágenes Docker" "$ZSHRC" 2>/dev/null; then
-  cat >> "$ZSHRC" <<'EOF'
-
-# dbx: Compilar imágenes Docker local y multi-plataforma
-dbx() {
-  local dockerfile="Dockerfile"
-  local proyecto=""
-  local tag="latest"
-  local push_flag=false
-
-  # Separar el flag --push de los argumentos posicionales
-  local args=()
-  for arg in "$@"; do
-    if [[ "$arg" == "--push" ]]; then
-      push_flag=true
-    else
-      args+=("$arg")
-    fi
-  done
-
-  # Parsear argumentos posicionales
-  if [[ ${#args[@]} -eq 3 ]]; then
-    dockerfile="${args[1]}"
-    proyecto="${args[2]}"
-    tag="${args[3]}"
-  elif [[ ${#args[@]} -eq 2 ]]; then
-    # Si el primer argumento es un archivo que existe, asumimos que es el Dockerfile
-    if [[ -f "${args[1]}" ]]; then
-      dockerfile="${args[1]}"
-      proyecto="${args[2]}"
-    else
-      proyecto="${args[1]}"
-      tag="${args[2]}"
-    fi
-  elif [[ ${#args[@]} -eq 1 ]]; then
-    proyecto="${args[1]}"
-  else
-    echo "Uso: dbx [dockerfile] <proyecto> [tag] [--push]"
-    echo "Ejemplos:"
-    echo "  dbx mi-app                          # Construye localmente (M1/arm64)"
-    echo "  dbx mi-app 1.0.0 --push             # Multi-plataforma (amd64/arm64) y hace push"
-    echo "  dbx Dockerfile.dev mi-app 1.0       # Usa Dockerfile.dev de forma local"
-    echo "  dbx Dockerfile.dev mi-app 1.0 --push"
-    return 1
-  fi
-
-  if [[ -z "$proyecto" ]]; then
-    echo "Error: Debes especificar el nombre del proyecto/imagen."
-    return 1
-  fi
-
-  if [[ ! -f "$dockerfile" ]]; then
-    echo "Error: El archivo Dockerfile '$dockerfile' no existe."
-    return 1
-  fi
-
-  local full_tag="${proyecto}:${tag}"
-
-  if [ "$push_flag" = true ]; then
-    echo "Compilando multi-plataforma (linux/amd64, linux/arm64) y haciendo push..."
-    docker buildx build --platform linux/amd64,linux/arm64 -f "$dockerfile" -t "$full_tag" --push .
-  else
-    echo "Compilando localmente para tu arquitectura (M1/arm64) y cargando en Docker local..."
-    docker buildx build -f "$dockerfile" -t "$full_tag" --load .
-  fi
-}
-EOF
-  echo "  + función dbx agregada a $ZSHRC"
-fi
-
-log "Configurando dpx (función Zsh para hacer push de imágenes locales)"
-if ! grep -qF "dpx: Hacer push de una imagen local" "$ZSHRC" 2>/dev/null; then
-  cat >> "$ZSHRC" <<'EOF'
-
-# dpx: Hacer push de una imagen local de Docker al registro
-dpx() {
-  local proyecto=""
-  local tag="latest"
-
-  if [[ $# -eq 2 ]]; then
-    proyecto="$1"
-    tag="$2"
-  elif [[ $# -eq 1 ]]; then
-    if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-      echo "Uso: dpx <proyecto> [tag]"
-      echo "  dpx mi-app                          # Hace push de mi-app:latest"
-      echo "  dpx mi-app 1.0.0                    # Hace push de mi-app:1.0.0"
-      return 0
-    fi
-    proyecto="$1"
-  else
-    echo "Error: Argumentos inválidos."
-    echo "Uso: dpx <proyecto> [tag]"
-    return 1
-  fi
-
-  local full_tag="${proyecto}:${tag}"
-  echo "Haciendo push de la imagen local: ${full_tag}..."
-  docker push "$full_tag"
-}
-EOF
-  echo "  + función dpx agregada a $ZSHRC"
-else
-  echo "  OK, función dpx ya configurada en $ZSHRC"
-fi
-
-
-
-fi
-
-if should_run 7; then
 # ---------- 10. Bases de datos relacionales ----------
 
 log "Instalando lazysql (MySQL + PostgreSQL)"
@@ -1102,7 +944,7 @@ brew install lazysql
 
 fi
 
-if should_run 8; then
+if should_run 7; then
 # ---------- 11. MongoDB ----------
 
 log "Instalando lazymongo (requiere Go)"
@@ -1207,7 +1049,7 @@ fi
 
 fi
 
-if should_run 9; then
+if should_run 8; then
 # ---------- 12. Editor: Neovim + LazyVim ----------
 
 log "Instalando Neovim"
@@ -2388,7 +2230,7 @@ fi
 
 fi
 
-if should_run 10; then
+if should_run 9; then
 # ---------- 13. tmux ----------
 
 log "Verificando tmux"
@@ -2591,7 +2433,7 @@ fi
 
 fi
 
-if should_run 11; then
+if should_run 10; then
 # ---------- 14. Asistentes de código con IA (CLIs) ----------
 
 log "Verificando Claude Code"
@@ -2634,7 +2476,7 @@ fi
 
 fi
 
-if should_run 12; then
+if should_run 11; then
 # ---------- 15. Aplicaciones GUI (Casks) ----------
 
 log "Verificando Lens (Kubernetes IDE)"
@@ -2643,38 +2485,6 @@ if [ -d "/Applications/Lens.app" ] || brew list --cask lens &>/dev/null; then
 else
   warn "Lens no encontrado. Instalando..."
   brew install --cask lens
-fi
-
-log "Verificando Docker Desktop"
-if [ -d "/Applications/Docker.app" ] || brew list --cask docker &>/dev/null || brew list --cask docker-desktop &>/dev/null; then
-  echo "  Docker Desktop OK, ya instalado"
-else
-  warn "Docker Desktop no encontrado. Instalando..."
-  brew install --cask docker
-fi
-
-log "Verificando Ghostty (Terminal)"
-if [ -d "/Applications/Ghostty.app" ] || brew list --cask ghostty &>/dev/null; then
-  echo "  Ghostty OK, ya instalado"
-else
-  warn "Ghostty no encontrado. Instalando..."
-  brew install --cask ghostty
-fi
-
-log "Configurando tema Catppuccin Frappé y fuente para Ghostty"
-# En macOS este archivo tiene prioridad sobre ~/.config/ghostty/config.ghostty
-GHOSTTY_CONFIG_MACOS="$HOME/Library/Application Support/com.mitchellh.ghostty/config.ghostty"
-GHOSTTY_CONFIG_XDG="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config.ghostty"
-if [ -f "$GHOSTTY_CONFIG_MACOS" ] || [ -f "$GHOSTTY_CONFIG_XDG" ]; then
-  warn "Config de Ghostty ya existe, no se toca"
-else
-  mkdir -p "$(dirname "$GHOSTTY_CONFIG_MACOS")"
-  cat > "$GHOSTTY_CONFIG_MACOS" <<'EOF_GHOSTTY'
-font-family = JetBrainsMono Nerd Font Mono
-font-size = 13
-theme = Catppuccin Frappe
-EOF_GHOSTTY
-  echo "  Tema Catppuccin Frappé y fuente configurados en $GHOSTTY_CONFIG_MACOS"
 fi
 
 log "Verificando Warp (Terminal)"
@@ -2798,7 +2608,7 @@ fi
 
 fi
 
-if should_run 13; then
+if should_run 12; then
 log "Configurando atajos de teclado y ajustes en Cursor"
 CURSOR_USER_DIR="$HOME/Library/Application Support/Cursor/User"
 mkdir -p "$CURSOR_USER_DIR"
@@ -3182,7 +2992,7 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "editor.scrollbar.horizontal": "hidden",
   "editor.minimap.autohide": "mouseover",
   "workbench.startupEditor": "readme",
-  "terminal.external.osxExec": "Ghostty.app",
+  "terminal.external.osxExec": "Warp.app",
   "terminal.integrated.env.osx": {},
   "workbench.sideBar.location": "right",
   "workbench.colorCustomizations": {},
@@ -3195,12 +3005,6 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
     "scminput": false,
   },
   "diffEditor.codeLens": true,
-  "[dockercompose]": {
-    "editor.insertSpaces": true,
-    "editor.tabSize": 2,
-    "editor.autoIndent": "advanced",
-    "editor.defaultFormatter": "redhat.vscode-yaml",
-  },
   "[github-actions-workflow]": {
     "editor.defaultFormatter": "redhat.vscode-yaml",
   },
@@ -3274,12 +3078,10 @@ if command -v cursor &>/dev/null; then
     "mikestead.dotenv"
     "mintlify.document"
     "mongodb.mongodb-vscode"
-    "ms-azuretools.vscode-docker"
     "ms-python.debugpy"
     "ms-python.python"
     "ms-python.vscode-pylance"
     "ms-toolsai.jupyter"
-    "ms-vscode-remote.remote-containers"
     "ms-vscode.live-server"
     "msjsdiag.vscode-react-native"
     "mtxr.sqltools"
@@ -3347,12 +3149,11 @@ fi
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Ghostty + Warp + Lens + Docker Desktop + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
+echo "  - Warp + Lens + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
 echo "  - kubectl + k9s + kubectx/kubens + stern (Kubernetes)"
-echo "  - Docker + lazydocker"
 echo "  - lazysql (MySQL/PostgreSQL)"
 echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"

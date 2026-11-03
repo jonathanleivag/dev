@@ -45,7 +45,7 @@ Stack de desarrollo: JS/TS con Vue, React, Astro, Next.js, Nest.js. Bases de dat
 
 ## Qué instala el script (resumen)
 
-Ver tabla completa en `README.md` → sección "Qué instala". En breve: Homebrew, git (identidad dual personal/trabajo vía `includeIf`), gh, nvm+Node+pnpm+yarn, zsh + plugins (completions, fzf-tab, autosuggestions, syntax-highlighting, fzf), Starship, zoxide/bat/eza, Ghostty (tema + fuente), kubectl/k9s/kubectx/stern, Docker+lazydocker, lazysql, vi-mongo+mongosh, Neovim+LazyVim (extras: typescript, vue, astro, tailwind, json, prettier, eslint + dashboard personalizado + `lazyvim_check_order` desactivado), tmux+TPM.
+Ver tabla completa en `README.md` → sección "Qué instala". En breve: Homebrew, git (identidad dual personal/trabajo vía `includeIf`), gh, nvm+Node+pnpm+yarn, zsh + plugins (completions, fzf-tab, autosuggestions, syntax-highlighting, fzf), Starship, zoxide/bat/eza, Warp (tema + fuente), kubectl/k9s/kubectx/stern, Docker+lazydocker, lazysql, vi-mongo+mongosh, Neovim+LazyVim (extras: typescript, vue, astro, tailwind, json, prettier, eslint + dashboard personalizado + `lazyvim_check_order` desactivado), tmux+TPM.
 
 ## Identidad de git (importante, no romper)
 
