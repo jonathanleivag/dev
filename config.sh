@@ -8,7 +8,7 @@
 # zoxide/bat/eza + git config + pnpm + kubectl/k9s + OrbStack +
 # lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
 # prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
-# Claude Code + Cursor CLI
+# Claude Code + Cursor CLI + Herdr
 #
 # Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
 # nada existente. Es idempotente: puedes correrlo varias veces.
@@ -119,7 +119,7 @@ if [ "$RUN_ALL" = "false" ]; then
 7. MongoDB Tools (Lazymongo + mongosh + vi-mongo + alias mgo)
 8. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
 9. Tmux & TPM Plugins
-10. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify)
+10. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify + Herdr)
 11. Aplicaciones GUI Casks (Warp, Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
 12. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
@@ -2474,6 +2474,176 @@ else
   fi
 fi
 
+log "Verificando Herdr App"
+if [ -d "$HOME/Applications/Herdr.app" ] || [ -d "/Applications/Herdr.app" ] || command -v herdr-app &>/dev/null; then
+  echo "  Herdr App OK, ya instalado"
+else
+  warn "Herdr App no encontrado. Instalando..."
+  curl -fsSL https://releases.herdr.dev/app/install.sh | sh
+fi
+
+log "Verificando Herdr Core (hc)"
+if command -v herdr-core &>/dev/null || [ -x "$HOME/.local/bin/herdr-core" ]; then
+  echo "  Herdr Core OK, ya instalado"
+else
+  warn "Herdr Core no encontrado. Instalando..."
+  curl -fsSL https://releases.herdr.dev/core/install.sh | sh
+fi
+# Ambos instaladores dejan binarios en ~/.local/bin
+append_once 'export PATH="$HOME/.local/bin:$PATH"' "$ZSHRC"
+
+log "Configurando Herdr (keys, settings y tema Catppuccin Frappé)"
+HERDR_HOME="$HOME/.config/herdr-app"
+mkdir -p "$HERDR_HOME/themes"
+
+# write_herdr_file <destino>: toma el contenido por stdin. Nunca sobreescribe un
+# archivo existente que el usuario pudo haber personalizado: solo avisa.
+write_herdr_file() {
+  local dest="$1"
+  local tmp
+  tmp="$(mktemp)"
+  cat > "$tmp"
+  if [ -f "$dest" ]; then
+    if cmp -s "$tmp" "$dest"; then
+      echo "  = $dest ya estaba actualizado, se omite"
+    else
+      warn "$dest ya existe y difiere, no se toca"
+    fi
+    rm -f "$tmp"
+    return
+  fi
+  mv "$tmp" "$dest"
+  echo "  + escrito $dest"
+}
+
+write_herdr_file "$HERDR_HOME/themes/catppuccin-frappe.json" <<'EOF'
+{
+  "background": "#303446",
+  "foreground": "#c6d0f5",
+  "selection": "#626880",
+  "cursor": "#f2d5cf",
+  "ansi": [
+    "#51576d", "#e78284", "#a6d189", "#e5c890",
+    "#8caaee", "#f4b8e4", "#81c8be", "#b5bfe2",
+    "#626880", "#e78284", "#a6d189", "#e5c890",
+    "#8caaee", "#f4b8e4", "#81c8be", "#a5adce"
+  ],
+  "colors": {
+    "canvas": "#292c3c",
+    "chrome": "#292c3c",
+    "surface": "#303446",
+    "popover": "#414559",
+    "raised": "#414559",
+    "hover": "#51576d",
+    "selected": "#626880",
+    "border": "#51576d",
+    "input": "#626880",
+    "muted": "#a5adce",
+    "dim": "#737994",
+    "accent": "#ca9ee6",
+    "accent_foreground": "#232634",
+    "solid": "#ca9ee6",
+    "solid_foreground": "#232634",
+    "working": "#8caaee",
+    "blocked": "#e78284",
+    "done": "#a6d189",
+    "idle": "#737994"
+  }
+}
+EOF
+
+write_herdr_file "$HERDR_HOME/settings.json" <<'EOF'
+{
+  "zoom": 1.0,
+  "sounds": {
+    "enabled": true
+  },
+  "minimum_contrast": 1.0
+}
+EOF
+
+write_herdr_file "$HERDR_HOME/keys.json" <<'EOF'
+{
+  "global": {
+    "cmd-q": "app.quit",
+    "cmd-h": "app.hide",
+    "cmd-alt-h": "app.hide_others",
+    "cmd-t": "tab.new",
+    "cmd-w": "tab.close",
+    "ctrl-tab": "tab.next",
+    "ctrl-shift-tab": "tab.prev",
+    "cmd-shift-]": "tab.next",
+    "cmd-shift-[": "tab.prev",
+    "cmd-alt-]": "space.next",
+    "cmd-alt-[": "space.prev",
+    "cmd-]": "agent.next",
+    "cmd-[": "agent.prev",
+    "cmd-shift-l": "layout.switch",
+    "cmd-n": "space.new",
+    "cmd-p": "mod.open:picker",
+    "cmd-shift-p": "app.palette",
+    "cmd-,": "app.settings",
+    "cmd-d": "pane.split:right",
+    "cmd-shift-d": "pane.split:down",
+    "cmd-shift-w": "pane.close",
+    "cmd-shift-enter": "pane.zoom",
+    "cmd-alt-left": "pane.go:left",
+    "cmd-alt-right": "pane.go:right",
+    "cmd-alt-up": "pane.go:up",
+    "cmd-alt-down": "pane.go:down",
+    "cmd-alt-shift-left": "pane.swap:left",
+    "cmd-alt-shift-right": "pane.swap:right",
+    "cmd-alt-shift-up": "pane.swap:up",
+    "cmd-alt-shift-down": "pane.swap:down",
+    "f2": "tab.rename",
+    "shift-f2": "space.rename",
+    "cmd-/": "app.help",
+    "cmd-shift-/": "app.help",
+    "cmd-b": "layout.toggle:sidebar",
+    "cmd-=": "app.zoom_in",
+    "cmd-+": "app.zoom_in",
+    "cmd--": "app.zoom_out",
+    "cmd-0": "app.zoom_reset",
+    "cmd-1": "tab.select:1",
+    "cmd-2": "tab.select:2",
+    "cmd-3": "tab.select:3",
+    "cmd-4": "tab.select:4",
+    "cmd-5": "tab.select:5",
+    "cmd-6": "tab.select:6",
+    "cmd-7": "tab.select:7",
+    "cmd-8": "tab.select:8",
+    "cmd-9": "tab.select:9",
+    "ctrl-1": "space.select:1",
+    "ctrl-2": "space.select:2",
+    "ctrl-3": "space.select:3",
+    "ctrl-4": "space.select:4",
+    "ctrl-5": "space.select:5",
+    "ctrl-6": "space.select:6",
+    "ctrl-7": "space.select:7",
+    "ctrl-8": "space.select:8",
+    "ctrl-9": "space.select:9"
+  },
+  "terminal": {
+    "cmd-c": "terminal.copy",
+    "cmd-v": "terminal.paste",
+    "ctrl-v": "terminal.paste_image",
+    "alt-left": "send:\u001bb",
+    "alt-right": "send:\u001bf",
+    "alt-backspace": "send:\u0017",
+    "cmd-left": "send:\u0001",
+    "cmd-right": "send:\u0005",
+    "cmd-backspace": "send:\u0015"
+  }
+}
+EOF
+
+# El tema se aplica en vivo solo si la app de Herdr está corriendo
+if command -v herdr-app &>/dev/null; then
+  herdr-app do app.theme '{"name":"catppuccin-frappe"}' &>/dev/null \
+    && echo "  + tema catppuccin-frappe aplicado" \
+    || warn "No se pudo aplicar el tema (¿Herdr está abierto?). Elígelo en Ajustes > Look."
+fi
+
 fi
 
 if should_run 11; then
@@ -3167,7 +3337,7 @@ echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
-echo "  - Claude Code + Cursor CLI (agent) + Graphify (asistentes de código con IA y grafo de conocimiento)"
+echo "  - Claude Code + Cursor CLI (agent) + Graphify + Herdr (app + core/hc)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
