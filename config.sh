@@ -5,7 +5,7 @@
 # Instalación reproducible del stack de terminal:
 # Warp (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
 # autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
-# zoxide/bat/eza + git config + pnpm + kubectl/k9s +
+# zoxide/bat/eza + git config + pnpm + kubectl/k9s + OrbStack +
 # lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
 # prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
 # Claude Code + Cursor CLI
@@ -120,7 +120,7 @@ if [ "$RUN_ALL" = "false" ]; then
 8. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
 9. Tmux & TPM Plugins
 10. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify)
-11. Aplicaciones GUI Casks (Warp, Lens, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
+11. Aplicaciones GUI Casks (Warp, Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
 12. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
     )
@@ -2487,6 +2487,14 @@ else
   brew install --cask lens
 fi
 
+log "Verificando OrbStack"
+if [ -d "/Applications/OrbStack.app" ] || brew list --cask orbstack &>/dev/null; then
+  echo "  OrbStack OK, ya instalado"
+else
+  warn "OrbStack no encontrado. Instalando..."
+  brew install --cask orbstack
+fi
+
 log "Verificando Warp (Terminal)"
 if [ -d "/Applications/Warp.app" ] || brew list --cask warp &>/dev/null; then
   echo "  Warp OK, ya instalado"
@@ -3149,7 +3157,7 @@ fi
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Warp + Lens + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
+echo "  - Warp + Lens + OrbStack + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
