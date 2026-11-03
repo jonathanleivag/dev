@@ -40,7 +40,7 @@ o simplemente cierra y abre una terminal nueva.
 | Shell              | zsh, zsh-completions, fzf-tab, zsh-autosuggestions, fzf, zsh-syntax-highlighting                       |
 | Prompt             | Starship (git branch/status, node, duración de comandos, máquina actual)                              |
 | CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`), lazygit (`gg` con `y` para copiar rama)          |
-| Terminal           | Warp (tema Catppuccin Frappé, JetBrainsMono Nerd Font)                                                 |
+| Fuentes            | JetBrainsMono Nerd Font, Victor Mono                                                                   |
 | Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
 | Asistentes de IA   | Claude Code, Cursor CLI (`agent`), Graphify, Herdr (app + core/`hc`, keys, settings y tema Catppuccin Frappé)                                |
 | Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                    |
@@ -48,7 +48,7 @@ o simplemente cierra y abre una terminal nueva.
 | MongoDB            | lazymongo, vi-mongo, mongosh, conexiones nombradas (`mgo <nombre>`)                                    |
 | Editor Terminal    | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado)   |
 | Editor GUI         | Cursor (configuración, atajos de teclado y 80+ extensiones migradas)                                    |
-| Apps GUI (Casks)   | Warp, Lens, OrbStack, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop, Redis Insight, Figma |
+| Apps GUI (Casks)   | Lens, OrbStack, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop, Redis Insight, Figma |
 
 Nada de esto borra o reemplaza tus datos — todo corre de forma idempotente y segura.
 
@@ -66,7 +66,7 @@ Al ejecutar `./config.sh`, puedes activar o desactivar cualquiera de los 12 mód
 8. **Neovim & LazyVim**: Configuración completa en `~/.config/nvim`, LSPs, Mergetool 3-way.
 9. **Tmux & TPM**: `~/.tmux.conf` + TPM + plugins de resurgimiento de sesión.
 10. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify, Herdr (app + core/`hc`, con `keys.json`, `settings.json` y tema Catppuccin Frappé en `~/.config/herdr-app`).
-11. **Aplicaciones GUI (Casks)**: Warp, Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma.
+11. **Aplicaciones GUI (Casks)**: Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma.
 12. **Cursor Editor**: Sincronización automática de `settings.json`, `keybindings.json` e instalación de 80+ extensiones.
 
 ## Alias de CLI moderna
@@ -91,8 +91,9 @@ El script agrega estos alias a tu `.zshrc`:
 
 Cursor queda preparado automáticamente con tus ajustes de trabajo e identidades:
 
-* **Sincronización de Ajustes**: `settings.json` y `keybindings.json` se escriben en `~/Library/Application Support/Cursor/User/`.
+* **Sincronización de Ajustes**: `settings.json`, `keybindings.json` y `tasks.json` se escriben en `~/Library/Application Support/Cursor/User/`.
 * **Atajos Destacados**:
+  * `Shift + Cmd + T`: Abrir Herdr con un space nuevo en la carpeta del **proyecto del archivo activo** (`herdr-space` vía `${fileWorkspaceFolder}`).
   * `Shift + Cmd + G`: Abrir panel de Git / SCM.
   * `Shift + Cmd + A`: Toggle de barra de actividades.
   * `Shift + Cmd + S`: Save All (Guardar todo).
@@ -163,6 +164,13 @@ cd ~/Development/dev
 chmod +x config.sh
 ./config.sh
 ```
+
+## Troubleshooting
+
+1. **`Shift + Cmd + T` abría siempre el primer proyecto del workspace multi-root**
+   * **Causa**: la task de Cursor pasaba `${workspaceFolder}` primero (en multi-root eso es el primer folder del `.code-workspace`), y `herdr-space` lo prefería sobre la carpeta del archivo abierto.
+   * **Ya corregido en el script**: la task prioriza `${fileWorkspaceFolder}` → `${fileDirname}` → `${workspaceFolder}`, y `herdr-space` elige el primer directorio válido de esa lista.
+   * **Arreglar manualmente si hace falta**: re-ejecutar el módulo de Cursor/Herdr del `config.sh`, o actualizar a mano `~/Library/Application Support/Cursor/User/tasks.json` y `~/.local/bin/herdr-space` con la misma lógica.
 
 ## Notas
 

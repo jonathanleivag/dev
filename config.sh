@@ -3,12 +3,11 @@
 # setup-terminal-stack.sh
 #
 # Instalación reproducible del stack de terminal:
-# Warp (+ tema, fuente Nerd Font) + zsh (completions, fzf-tab clonado,
-# autosuggestions, syntax-highlighting, fzf) + Starship (prompt) +
-# zoxide/bat/eza + git config + pnpm + kubectl/k9s + OrbStack +
-# lazysql + lazymongo + LazyVim (+ extras typescript/vue/astro/tailwind/json/
-# prettier/eslint + dashboard personalizado) + tmux (+ TPM y plugins) +
-# Claude Code + Cursor CLI + Herdr
+# zsh (completions, fzf-tab clonado, autosuggestions, syntax-highlighting,
+# fzf) + fuente Nerd Font + Starship (prompt) + zoxide/bat/eza + git config +
+# pnpm + kubectl/k9s + OrbStack + lazysql + lazymongo + LazyVim (+ extras
+# typescript/vue/astro/tailwind/json/prettier/eslint + dashboard personalizado) +
+# tmux (+ TPM y plugins) + Claude Code + Cursor CLI + Herdr
 #
 # Diseñado para correr en cualquier Mac (Apple Silicon o Intel) sin romper
 # nada existente. Es idempotente: puedes correrlo varias veces.
@@ -120,7 +119,7 @@ if [ "$RUN_ALL" = "false" ]; then
 8. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
 9. Tmux & TPM Plugins
 10. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify + Herdr)
-11. Aplicaciones GUI Casks (Warp, Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
+11. Aplicaciones GUI Casks (Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
 12. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
     )
@@ -435,9 +434,9 @@ else
   echo "  zsh ya es tu shell por defecto"
 fi
 
-# ---------- 4. Fuentes de Letras (Warp & Cursor) ----------
+# ---------- 4. Fuentes de Letras (Terminal & Cursor) ----------
 
-log "Verificando fuente JetBrainsMono Nerd Font (usada por Warp)"
+log "Verificando fuente JetBrainsMono Nerd Font"
 if brew list --cask font-jetbrains-mono-nerd-font &>/dev/null; then
   echo "  JetBrainsMono Nerd Font OK, ya instalada"
 else
@@ -2492,6 +2491,52 @@ fi
 # Ambos instaladores dejan binarios en ~/.local/bin
 append_once 'export PATH="$HOME/.local/bin:$PATH"' "$ZSHRC"
 
+log "Instalando helper herdr-space (abre un space nuevo en una carpeta)"
+mkdir -p "$HOME/.local/bin"
+cat > "$HOME/.local/bin/herdr-space" <<'EOF_HERDR_SPACE'
+#!/usr/bin/env bash
+# Abre (o enfoca) Herdr y crea un space nuevo en la carpeta indicada.
+# Uso: herdr-space [/ruta/preferida] [/fallback...]
+# Toma el primer argumento que sea un directorio válido (útil con
+# ${fileWorkspaceFolder} → ${fileDirname} → ${workspaceFolder} desde Cursor).
+set -euo pipefail
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+FOLDER=""
+for candidate in "$@"; do
+  # Saltar vacíos o variables de Cursor/VS Code sin resolver (ej. ${fileWorkspaceFolder})
+  if [ -z "$candidate" ] || [[ "$candidate" == \$\{*\} ]]; then
+    continue
+  fi
+  if [ -d "$candidate" ]; then
+    FOLDER="$candidate"
+    break
+  fi
+done
+if [ -z "$FOLDER" ] || [ ! -d "$FOLDER" ]; then
+  FOLDER="$PWD"
+fi
+FOLDER="$(cd "$FOLDER" && pwd)"
+
+if ! command -v herdr-app >/dev/null 2>&1; then
+  echo "herdr-app no encontrado (¿Herdr instalado?)" >&2
+  exit 1
+fi
+
+if ! herdr-app status >/dev/null 2>&1; then
+  open -a Herdr >/dev/null 2>&1 || herdr-app >/dev/null 2>&1 &
+  for _ in $(seq 1 50); do
+    herdr-app status >/dev/null 2>&1 && break
+    sleep 0.1
+  done
+fi
+
+herdr-app do space.new --folder "$FOLDER" >/dev/null
+open -a Herdr >/dev/null 2>&1 || true
+EOF_HERDR_SPACE
+chmod +x "$HOME/.local/bin/herdr-space"
+echo "  herdr-space OK → $HOME/.local/bin/herdr-space"
+
 log "Configurando Herdr (keys, settings y tema Catppuccin Frappé)"
 HERDR_HOME="$HOME/.config/herdr-app"
 mkdir -p "$HERDR_HOME/themes"
@@ -2663,68 +2708,6 @@ if [ -d "/Applications/OrbStack.app" ] || brew list --cask orbstack &>/dev/null;
 else
   warn "OrbStack no encontrado. Instalando..."
   brew install --cask orbstack
-fi
-
-log "Verificando Warp (Terminal)"
-if [ -d "/Applications/Warp.app" ] || brew list --cask warp &>/dev/null; then
-  echo "  Warp OK, ya instalado"
-else
-  warn "Warp no encontrado. Instalando..."
-  brew install --cask warp
-fi
-
-log "Configurando tema Catppuccin Frappé y ajustes para Warp"
-WARP_CONFIG_DIR="$HOME/.warp"
-WARP_THEMES_DIR="$WARP_CONFIG_DIR/themes"
-WARP_THEME_FILE="$WARP_THEMES_DIR/catppuccin_frappe.yml"
-WARP_SETTINGS_FILE="$WARP_CONFIG_DIR/settings.toml"
-if [ -f "$WARP_THEME_FILE" ] || [ -f "$WARP_SETTINGS_FILE" ]; then
-  warn "Config de Warp ya existe, no se toca"
-else
-  mkdir -p "$WARP_THEMES_DIR"
-  cat > "$WARP_THEME_FILE" <<'EOF_WARP_THEME'
-background: '#303446'
-accent: '#f2d5cf'
-foreground: '#c6d0f5'
-details: darker
-terminal_colors:
-  normal:
-    black: '#51576d'
-    red: '#e78284'
-    green: '#a6d189'
-    yellow: '#e5c890'
-    blue: '#8caaee'
-    magenta: '#f4b8e4'
-    cyan: '#81c8be'
-    white: '#b5bfe2'
-  bright:
-    black: '#626880'
-    red: '#e78284'
-    green: '#a6d189'
-    yellow: '#e5c890'
-    blue: '#8caaee'
-    magenta: '#f4b8e4'
-    cyan: '#81c8be'
-    white: '#a5adce'
-EOF_WARP_THEME
-  cat > "$WARP_SETTINGS_FILE" <<EOF_WARP_SETTINGS
-[appearance]
-[appearance.vertical_tabs]
-enabled = true
-
-[appearance.themes]
-system_theme = false
-theme = { custom = { name = "Catppuccin Frappe", path = "$HOME/.warp/themes/catppuccin_frappe.yml" } }
-
-[appearance.text]
-font_size = 13.0
-font_name = "JetBrainsMono Nerd Font Mono"
-
-[general]
-default_session_mode = "terminal"
-restore_session = true
-EOF_WARP_SETTINGS
-  echo "  Tema Catppuccin Frappé y fuente configurados en $WARP_CONFIG_DIR"
 fi
 
 log "Verificando Android Studio"
@@ -2995,7 +2978,8 @@ cat > "$CURSOR_USER_DIR/keybindings.json" <<'EOF_CURSOR_KB'
   },
   {
     "key": "shift+cmd+t",
-    "command": "workbench.action.terminal.openNativeConsole",
+    "command": "workbench.action.tasks.runTask",
+    "args": "Herdr: new space in workspace",
     "when": "!terminalFocus"
   },
   {
@@ -3017,6 +3001,36 @@ cat > "$CURSOR_USER_DIR/keybindings.json" <<'EOF_CURSOR_KB'
   }
 ]
 EOF_CURSOR_KB
+
+cat > "$CURSOR_USER_DIR/tasks.json" <<'EOF_CURSOR_TASKS'
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Herdr: new space in workspace",
+      "type": "shell",
+      "command": "herdr-space",
+      "args": ["${fileWorkspaceFolder}", "${fileDirname}", "${workspaceFolder}"],
+
+      "options": {
+        "env": {
+          "PATH": "${env:HOME}/.local/bin:/opt/homebrew/bin:/usr/local/bin:${env:PATH}"
+        }
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "silent",
+        "echo": false,
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": false,
+        "close": true
+      }
+    }
+  ]
+}
+EOF_CURSOR_TASKS
 
 cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
 {
@@ -3170,7 +3184,6 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
   "editor.scrollbar.horizontal": "hidden",
   "editor.minimap.autohide": "mouseover",
   "workbench.startupEditor": "readme",
-  "terminal.external.osxExec": "Warp.app",
   "terminal.integrated.env.osx": {},
   "workbench.sideBar.location": "right",
   "workbench.colorCustomizations": {},
@@ -3202,7 +3215,8 @@ cat > "$CURSOR_USER_DIR/settings.json" <<'EOF_CURSOR_ST'
 }
 EOF_CURSOR_ST
 
-echo "  Ajustes y atajos de teclado creados en $CURSOR_USER_DIR"
+echo "  Ajustes, atajos y tasks creados en $CURSOR_USER_DIR"
+echo "  Shift+Cmd+T → Herdr: new space en el proyecto del archivo activo"
 
 CURSOR_STATE_DB="$CURSOR_USER_DIR/globalStorage/state.vscdb"
 mkdir -p "$CURSOR_USER_DIR/globalStorage"
@@ -3327,7 +3341,7 @@ fi
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Warp + Lens + OrbStack + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
+echo "  - Lens + OrbStack + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
