@@ -86,6 +86,7 @@ El script agrega estos alias a tu `.zshrc`:
 | `hq`  | —         | `harlequin-launcher` (selector de conexiones SQL)      |
 | `lsql`| —         | `lazysql`                                              |
 | `lm`  | —         | `lazymongo`                                            |
+| `ca`  | —         | `cursor-agent`                                         |
 
 ## Atajos y Configuración de Cursor
 
