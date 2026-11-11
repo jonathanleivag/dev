@@ -136,6 +136,18 @@ mgo                # sin argumentos: lista las conexiones disponibles
 mgo cliente-x       # abre mongosh conectado a esa URI
 ```
 
+## Docker buildx (`dbx`)
+
+El script agrega la función `dbx` a tu `.zshrc` (junto con OrbStack) para construir imágenes con Docker Buildx:
+
+```bash
+dbx Dockerfile mi-app:latest            # Local (arquitectura actual) con --load
+dbx Dockerfile mi-app:1.0.0 --push      # Multi-plataforma (amd64/arm64) + push al hub
+dbx Dockerfile.dev mi-app:dev           # Dockerfile alternativo, local
+```
+
+Sintaxis: `dbx <dockerfile> <proyecto:tag> [--push]`
+
 ## tmux
 
 El script instala tmux con una config lista para usar (`~/.tmux.conf`) y **TPM** (Tmux Plugin Manager):

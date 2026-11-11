@@ -2711,6 +2711,64 @@ else
   brew install --cask orbstack
 fi
 
+log "Configurando función dbx (docker buildx) en .zshrc"
+if ! grep -qF 'dbx()' "$ZSHRC" 2>/dev/null; then
+  cat >> "$ZSHRC" <<'EOF'
+
+# dbx: Compilar imágenes Docker local y multi-plataforma
+# Uso: dbx <dockerfile> <proyecto:tag> [--push]
+dbx() {
+  local dockerfile=""
+  local full_tag=""
+  local push_flag=false
+
+  # Separar el flag --push de los argumentos posicionales
+  local args=()
+  for arg in "$@"; do
+    if [[ "$arg" == "--push" ]]; then
+      push_flag=true
+    else
+      args+=("$arg")
+    fi
+  done
+
+  if [[ ${#args[@]} -ne 2 ]]; then
+    echo "Uso: dbx <dockerfile> <proyecto:tag> [--push]"
+    echo "Ejemplos:"
+    echo "  dbx Dockerfile mi-app:latest            # Local (M1/arm64) con --load"
+    echo "  dbx Dockerfile mi-app:1.0.0 --push      # Multi-plataforma + push al hub"
+    echo "  dbx Dockerfile.dev mi-app:dev           # Dockerfile alternativo, local"
+    echo "  dbx Dockerfile.dev mi-app:dev --push"
+    return 1
+  fi
+
+  dockerfile="${args[1]}"
+  full_tag="${args[2]}"
+
+  if [[ "$full_tag" != *:* ]]; then
+    echo "Error: El segundo argumento debe ser proyecto:tag (ej. mi-app:1.0.0)."
+    return 1
+  fi
+
+  if [[ ! -f "$dockerfile" ]]; then
+    echo "Error: El archivo Dockerfile '$dockerfile' no existe."
+    return 1
+  fi
+
+  if [ "$push_flag" = true ]; then
+    echo "Compilando multi-plataforma (linux/amd64, linux/arm64) y haciendo push..."
+    docker buildx build --platform linux/amd64,linux/arm64 -f "$dockerfile" -t "$full_tag" --push .
+  else
+    echo "Compilando localmente para tu arquitectura (M1/arm64) y cargando en Docker local..."
+    docker buildx build -f "$dockerfile" -t "$full_tag" --load .
+  fi
+}
+EOF
+  echo "  + función dbx agregada a $ZSHRC"
+else
+  echo "  OK, función dbx ya presente en $ZSHRC"
+fi
+
 log "Verificando Android Studio"
 if [ -d "/Applications/Android Studio.app" ] || brew list --cask android-studio &>/dev/null; then
   echo "  Android Studio OK, ya instalado"
