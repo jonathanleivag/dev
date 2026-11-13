@@ -119,7 +119,7 @@ if [ "$RUN_ALL" = "false" ]; then
 8. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
 9. Tmux & TPM Plugins
 10. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify + Herdr)
-11. Aplicaciones GUI Casks (Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma)
+11. Aplicaciones GUI Casks (Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma, Tendedero)
 12. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
     )
@@ -2826,6 +2826,14 @@ else
   brew install --cask figma
 fi
 
+log "Verificando Tendedero (Screenshots y grabación de pantalla)"
+if [ -d "/Applications/Tendedero.app" ] || brew list --cask tendedero &>/dev/null; then
+  echo "  Tendedero OK, ya instalado"
+else
+  warn "Tendedero no encontrado. Instalando..."
+  brew install --cask tendedero
+fi
+
 fi
 
 if should_run 12; then
@@ -3400,7 +3408,7 @@ fi
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Lens + OrbStack + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma (Aplicaciones GUI)"
+echo "  - Lens + OrbStack + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma + Tendedero (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"
