@@ -119,7 +119,7 @@ if [ "$RUN_ALL" = "false" ]; then
 8. Neovim & LazyVim (LSPs, extras, Mergetool 3-way)
 9. Tmux & TPM Plugins
 10. Asistentes de IA CLI (Claude Code + Cursor CLI + Graphify + Herdr)
-11. Aplicaciones GUI Casks (Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma, Tendedero)
+11. Aplicaciones GUI Casks (Freelens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma, Tendedero)
 12. Configuración, Atajos y Extensiones de Cursor (80+ plugins)
 EOF_FZF
     )
@@ -762,7 +762,7 @@ if kubectl config get-contexts &>/dev/null && [ -n "$(kubectl config get-context
 else
   warn "No se encontraron contextos de Kubernetes configurados (~/.kube/config vacío o ausente)."
   warn "k9s se instalará igual, pero necesitarás configurar tu kubeconfig antes de usarlo"
-  warn "(por ejemplo, exportando el config de tu proveedor cloud o copiándolo desde donde ya lo usas con Lens)."
+  warn "(por ejemplo, exportando el config de tu proveedor cloud o copiándolo desde donde ya lo usas con Freelens)."
 fi
 
 # Configurar cargador dinámico de kubeconfigs en .zshrc
@@ -2695,12 +2695,12 @@ fi
 if should_run 11; then
 # ---------- 15. Aplicaciones GUI (Casks) ----------
 
-log "Verificando Lens (Kubernetes IDE)"
-if [ -d "/Applications/Lens.app" ] || brew list --cask lens &>/dev/null; then
-  echo "  Lens OK, ya instalado"
+log "Verificando Freelens (Kubernetes IDE)"
+if [ -d "/Applications/Freelens.app" ] || brew list --cask freelens &>/dev/null; then
+  echo "  Freelens OK, ya instalado"
 else
-  warn "Lens no encontrado. Instalando..."
-  brew install --cask lens
+  warn "Freelens no encontrado. Instalando..."
+  brew install --cask freelens
 fi
 
 log "Verificando OrbStack"
@@ -3408,7 +3408,7 @@ fi
 log "Listo. Resumen de lo instalado:"
 echo "  - gh (GitHub CLI) + identidad de git por carpeta (personal/trabajo)"
 echo "  - nvm + Node LTS + pnpm (vía corepack)"
-echo "  - Lens + OrbStack + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma + Tendedero (Aplicaciones GUI)"
+echo "  - Freelens + OrbStack + Android Studio + MongoDB Compass + Cursor + Google Chrome + Claude Desktop + Redis Insight + Figma + Tendedero (Aplicaciones GUI)"
 echo "  - zsh-completions + fzf-tab + zsh-autosuggestions + zsh-syntax-highlighting + fzf"
 echo "  - Starship (prompt con git/node/duración de comandos)"
 echo "  - zoxide + bat + eza (+ alias cd/ls/ll/lt/cat)"

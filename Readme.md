@@ -1,6 +1,6 @@
 # Stack de terminal — Jonathan
 
-Configuración reproducible para migrar de entorno gráfico (VSCode/Antigravity, Lens) a un flujo 100% en terminal y optimizado para desarrollo con Cursor, en cualquier Mac (Apple Silicon o Intel).
+Configuración reproducible para migrar de entorno gráfico (VSCode/Antigravity, Freelens) a un flujo 100% en terminal y optimizado para desarrollo con Cursor, en cualquier Mac (Apple Silicon o Intel).
 
 ## Contenido
 
@@ -48,7 +48,7 @@ o simplemente cierra y abre una terminal nueva.
 | MongoDB            | lazymongo, vi-mongo, mongosh, conexiones nombradas (`mgo <nombre>`)                                    |
 | Editor Terminal    | Neovim + LazyVim en `~/.config/nvim` (con extras JS/TS/Vue/Astro/Tailwind + dashboard personalizado)   |
 | Editor GUI         | Cursor (configuración, atajos de teclado y 80+ extensiones migradas)                                    |
-| Apps GUI (Casks)   | Lens, OrbStack, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop, Redis Insight, Figma, Tendedero |
+| Apps GUI (Casks)   | Freelens, OrbStack, Android Studio, MongoDB Compass, Cursor, Google Chrome, Claude Desktop, Redis Insight, Figma, Tendedero |
 
 Nada de esto borra o reemplaza tus datos — todo corre de forma idempotente y segura.
 
@@ -66,7 +66,7 @@ Al ejecutar `./config.sh`, puedes activar o desactivar cualquiera de los 12 mód
 8. **Neovim & LazyVim**: Configuración completa en `~/.config/nvim`, LSPs, Mergetool 3-way.
 9. **Tmux & TPM**: `~/.tmux.conf` + TPM + plugins de resurgimiento de sesión.
 10. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify, Herdr (app + core/`hc`, con `keys.json`, `settings.json` y tema Catppuccin Frappé en `~/.config/herdr-app`).
-11. **Aplicaciones GUI (Casks)**: Lens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma, Tendedero.
+11. **Aplicaciones GUI (Casks)**: Freelens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma, Tendedero.
 12. **Cursor Editor**: Sincronización automática de `settings.json`, `keybindings.json` e instalación de 80+ extensiones.
 
 ## Alias de CLI moderna

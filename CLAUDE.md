@@ -4,7 +4,7 @@ Contexto para Claude Code (u otras instancias de Claude) trabajando en este repo
 
 ## Qué es este repo
 
-`terminal-stack` — configuración reproducible para migrar de un entorno gráfico (VSCode/Antigravity, Lens, Docker Desktop, Warp-only) a un flujo de desarrollo basado en terminal, en cualquier Mac (Apple Silicon o Intel).
+`terminal-stack` — configuración reproducible para migrar de un entorno gráfico (VSCode/Antigravity, Freelens, Docker Desktop, Warp-only) a un flujo de desarrollo basado en terminal, en cualquier Mac (Apple Silicon o Intel).
 
 Dueño: Jonathan (`jonathanleivag`), senior developer. Trabaja en:
 
@@ -39,7 +39,7 @@ Stack de desarrollo: JS/TS con Vue, React, Astro, Next.js, Nest.js. Bases de dat
 
 5. **Numeración de secciones consistente.** El script está dividido en secciones comentadas `# ---------- N. Nombre ----------`. Al insertar una sección nueva en medio, renumerar las siguientes para mantener la secuencia (actualmente van del 0 al 13).
 
-6. **Todo corre en paralelo con las apps gráficas existentes.** Nunca desinstalar Lens, Docker Desktop, VSCode/Antigravity, ni Warp. El objetivo es migración gradual, no reemplazo forzado.
+6. **Todo corre en paralelo con las apps gráficas existentes.** Nunca desinstalar Freelens, Docker Desktop, VSCode/Antigravity, ni Warp. El objetivo es migración gradual, no reemplazo forzado.
 
 7. **Preguntas interactivas solo cuando sea necesario** (`read -r -p`), siguiendo el patrón ya usado para: cambiar shell por defecto, instalar Docker Desktop, autenticar `gh`, e identidad de git (personal/trabajo). No agregar prompts para cosas que se pueden resolver con un default sensato.
 
@@ -64,6 +64,6 @@ Al modificar esta lógica, **siempre probar con un `$HOME` temporal** (ver ejemp
 
 ## Cosas explícitamente fuera de alcance de este script
 
-- No instala WebStorm, VSCode, Antigravity, Lens ni Docker Desktop como reemplazo forzado (Docker Desktop sí se ofrece instalar si falta, pero como dependencia de `lazydocker`, no como parte del "stack de terminal").
+- No instala WebStorm, VSCode, Antigravity, Freelens ni Docker Desktop como reemplazo forzado (Docker Desktop sí se ofrece instalar si falta, pero como dependencia de `lazydocker`, no como parte del "stack de terminal").
 - No configura SSH keys, GPG signing de commits, ni credenciales de ningún tipo — fuera del alcance de una guía de terminal tooling.
 - No gestiona secretos ni variables de entorno de proyectos individuales.
