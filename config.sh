@@ -717,7 +717,6 @@ append_once 'alias hq="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias hsql="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias harlequin="$HOME/.local/bin/harlequin-launcher"' "$ZSHRC"
 append_once 'alias lsql="lazysql"' "$ZSHRC"
-append_once 'alias ca="cursor-agent"' "$ZSHRC"
 
 if ! grep -q "ia()" "$ZSHRC" 2>/dev/null; then
   cat <<'EOF' >> "$ZSHRC"
