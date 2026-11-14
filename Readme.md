@@ -65,7 +65,7 @@ Al ejecutar `./config.sh`, puedes activar o desactivar cualquiera de los 12 mód
 7. **MongoDB Tools**: `lazymongo`, `mongosh`, `vi-mongo`, alias `mgo`.
 8. **Neovim & LazyVim**: Configuración completa en `~/.config/nvim`, LSPs, Mergetool 3-way.
 9. **Tmux & TPM**: `~/.tmux.conf` + TPM + plugins de resurgimiento de sesión.
-10. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify, Herdr (app + core/`hc`, con `keys.json`, `settings.json`, tema Catppuccin Frappé, layout `main-right-sidebar` — sidebar a la derecha con tabs Spaces/Agents/Files/Changes — y mods asociados en `~/.config/herdr-app`).
+10. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify, Herdr (app + core/`hc`, con `keys.json`, `settings.json`, tema Catppuccin Frappé, layout `main-right-sidebar` — sidebar a la derecha con tabs Spaces/Agents/Files/Changes —, mod `tabs-right-sidebar` con scroll horizontal por trackpad, y mods asociados en `~/.config/herdr-app`).
 11. **Aplicaciones GUI (Casks)**: Freelens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma, Tendedero.
 12. **Cursor Editor**: Sincronización automática de `settings.json`, `keybindings.json` e instalación de 80+ extensiones.
 
@@ -183,6 +183,11 @@ chmod +x config.sh
    * **Causa**: la task de Cursor pasaba `${workspaceFolder}` primero (en multi-root eso es el primer folder del `.code-workspace`), y `herdr-space` lo prefería sobre la carpeta del archivo abierto.
    * **Ya corregido en el script**: la task prioriza `${fileWorkspaceFolder}` → `${fileDirname}` → `${workspaceFolder}`, y `herdr-space` elige el primer directorio válido de esa lista.
    * **Arreglar manualmente si hace falta**: re-ejecutar el módulo de Cursor/Herdr del `config.sh`, o actualizar a mano `~/Library/Application Support/Cursor/User/tasks.json` y `~/.local/bin/herdr-space` con la misma lógica.
+
+2. **Barra de tabs de Herdr no hacía scroll horizontal con trackpad**
+   * **Causa**: el mod `tabs-right-sidebar` convertía el gesto vertical del trackpad en `tab.prev` / `tab.next` en vez de panear la barra.
+   * **Ya corregido en el script**: el mod panea con swipe horizontal o vertical de dos dedos y mantiene un indicador de overflow.
+   * **Arreglar manualmente si hace falta**: re-ejecutar el módulo de Asistentes de IA / Herdr del `config.sh` (usa `sync_herdr_managed` para `mods/tabs-right-sidebar/main.js`).
 
 ## Notas
 

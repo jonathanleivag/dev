@@ -2923,7 +2923,7 @@ EOF
 ensure_herdr_mod_assets "tabs" "tabs-right-sidebar"
 sync_herdr_managed "$HERDR_HOME/mods/tabs-right-sidebar/main.js" <<'EOF'
 import { View, div, svg, image } from "gpui-kit";
-import { h_flex, ScrollHandle } from "gpui-base";
+import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
 
 function find(node, id) {
@@ -2938,8 +2938,27 @@ function find(node, id) {
 export default class Tabs extends View {
   init() {
     this.pressed = null;
-    this.scroll = ScrollHandle.new();
+    this.scrollX = 0;
+    this.viewW = 0;
+    this.contentW = 0;
+    this.tabW = {};
     this.panels = JSON.parse(localStorage.getItem("panels") ?? "{}");
+  }
+
+  clampScroll() {
+    const max = Math.max(0, this.contentW - this.viewW);
+    this.scrollX = Math.max(0, Math.min(this.scrollX, max));
+  }
+
+  // Keep the active tab in view after select / rename / size changes.
+  ensureVisible(index, ids) {
+    if (index < 0 || !ids?.length) return;
+    let left = 0;
+    for (let j = 0; j < index; j++) left += (this.tabW[ids[j]] ?? 0) + 3;
+    const right = left + (this.tabW[ids[index]] ?? 0);
+    if (left < this.scrollX) this.scrollX = left;
+    else if (right > this.scrollX + this.viewW) this.scrollX = right - this.viewW;
+    this.clampScroll();
   }
 
   // The side panel is remembered per space: switching shows that space's choice
@@ -2975,12 +2994,14 @@ export default class Tabs extends View {
     const space = spaces().find(p => p.active);
     const shown = space?.tabs ?? [];
     const active = shown.findIndex(tab => tab.active);
+    const ids = shown.map(tab => tab.id);
     const selected = shown[active]?.id;
     if (selected !== this.selected || active !== this.selectedIndex) {
       this.selected = selected;
       this.selectedIndex = active;
-      if (active >= 0) this.scroll.scroll_to_item(active);
+      this.ensureVisible(active, ids);
     }
+    const zoom = settings().zoom || 1;
     const stop = (_e, cx) => cx.stop_propagation();
     const button = (id, label, action) => div().id(id).size(26).flex_none().flex().items_center().justify_center().rounded(6).text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground))
       .on_mouse_down("left", stop).on_click(action).child(label);
@@ -2988,8 +3009,11 @@ export default class Tabs extends View {
       const program = panes().find(p => p.tab === c.id && p.program?.agent)?.program ?? panes().find(p => p.tab === c.id)?.program;
       const name = /^tb\d+$/.test(c.name) ? program?.name ?? "Terminal" : c.name;
       return h_flex().id(`tab-${c.id}`).h(29).px(10).gap(7).rounded(7).items_center().flex_none().text_size(12.8)
-        // A rename or status dot on this or an earlier tab can push the active one out.
-        .when(i <= active, el => el.on_size_change((_size, cx) => { this.scroll.scroll_to_item(active); cx.notify(); }))
+        .on_size_change((size, cx) => {
+          this.tabW[c.id] = size.width / zoom;
+          this.ensureVisible(active, ids);
+          cx.notify();
+        })
         .border(1).border_color(c.active ? t.border : t.chrome).bg(c.active ? t.raised : t.chrome).text_color(c.active ? t.foreground : t.muted)
         .hover(s => s.bg(t.hover))
         .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); })
@@ -3019,12 +3043,39 @@ export default class Tabs extends View {
     const panel = find(root, "panel"), body = find(root, "panel-body");
     const enabled = shared("workspace.panels") ?? ["files", "changes"];
     this.syncPanel(space, panel, body, enabled);
+    const overflow = this.contentW > this.viewW + 0.5;
+    const thumbW = overflow ? Math.max(24, (this.viewW / this.contentW) * this.viewW) : 0;
+    const thumbL = overflow && this.contentW > this.viewW
+      ? (this.scrollX / (this.contentW - this.viewW)) * (this.viewW - thumbW)
+      : 0;
     return h_flex().size_full().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)
       .on_mouse_up("left", () => { this.pressed = null; })
-      .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
-      .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(3).overflow_x_scrollbar().track_scroll(this.scroll)
-        .on_size_change((_size, cx) => { if (active >= 0) { this.scroll.scroll_to_item(active); cx.notify(); } })
-        .children(shown.map(item)))
+      .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().relative().overflow_hidden()
+        .on_size_change((size, cx) => {
+          this.viewW = size.width / zoom;
+          this.ensureVisible(active, ids);
+          cx.notify();
+        })
+        .on_scroll_wheel((e, cx) => {
+          // Trackpad: horizontal swipe (delta.x) or vertical two-finger (delta.y) pans the strip.
+          const dx = Math.abs(e.delta.x) >= Math.abs(e.delta.y) ? e.delta.x : e.delta.y;
+          if (Math.abs(dx) < 0.5) return;
+          this.scrollX -= dx;
+          this.clampScroll();
+          cx.stop_propagation();
+          cx.notify();
+        })
+        .child(h_flex().id("tab-row").h_full().items_center().gap(3).absolute().top(0).left(-this.scrollX)
+          .on_size_change((size, cx) => {
+            this.contentW = size.width / zoom;
+            this.clampScroll();
+            this.ensureVisible(active, ids);
+            cx.notify();
+          })
+          .children(shown.map(item)))
+        .when(overflow, el => el.child(
+          div().id("tab-scroll-bar").absolute().left(0).right(0).bottom(0).h(2).bg(t.border)
+            .child(div().absolute().top(0).h(2).left(thumbL).w(thumbW).bg(t.muted)))))
       .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/tabs-right-sidebar/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/tabs-right-sidebar/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
