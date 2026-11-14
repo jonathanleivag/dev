@@ -42,7 +42,7 @@ o simplemente cierra y abre una terminal nueva.
 | CLI moderna        | zoxide (`z`/`cd`), bat (`cat`), eza (`ls`/`ll`/`lt`), lazygit (`gg` con `y` para copiar rama)          |
 | Fuentes            | JetBrainsMono Nerd Font, Victor Mono                                                                   |
 | Multiplexor        | tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)                                             |
-| Asistentes de IA   | Claude Code, Cursor CLI (`agent`), Graphify, Herdr (app + core/`hc`, keys, settings y tema Catppuccin Frappé)                                |
+| Asistentes de IA   | Claude Code, Cursor CLI (`agent`), Graphify, Herdr (app + core/`hc`, keys, settings, tema Catppuccin Frappé, layout `main-right-sidebar` y mods)                                |
 | Kubernetes         | kubectl, k9s, kubectx/kubens, stern                                                                    |
 | Bases relacionales | Harlequin SQL IDE (con atajos Vim y perfiles guardados) + lazysql                                      |
 | MongoDB            | lazymongo, vi-mongo, mongosh, conexiones nombradas (`mgo <nombre>`)                                    |
@@ -65,7 +65,7 @@ Al ejecutar `./config.sh`, puedes activar o desactivar cualquiera de los 12 mód
 7. **MongoDB Tools**: `lazymongo`, `mongosh`, `vi-mongo`, alias `mgo`.
 8. **Neovim & LazyVim**: Configuración completa en `~/.config/nvim`, LSPs, Mergetool 3-way.
 9. **Tmux & TPM**: `~/.tmux.conf` + TPM + plugins de resurgimiento de sesión.
-10. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify, Herdr (app + core/`hc`, con `keys.json`, `settings.json` y tema Catppuccin Frappé en `~/.config/herdr-app`).
+10. **Asistentes de IA CLI**: Claude Code, Cursor CLI (`agent` / `cursor-agent`), Graphify, Herdr (app + core/`hc`, con `keys.json`, `settings.json`, tema Catppuccin Frappé, layout `main-right-sidebar` — sidebar a la derecha con tabs Spaces/Agents/Files/Changes — y mods asociados en `~/.config/herdr-app`).
 11. **Aplicaciones GUI (Casks)**: Freelens, OrbStack, Android Studio, Compass, Cursor, Chrome, Claude Desktop, Redis Insight, Figma, Tendedero.
 12. **Cursor Editor**: Sincronización automática de `settings.json`, `keybindings.json` e instalación de 80+ extensiones.
 

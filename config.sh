@@ -2537,17 +2537,17 @@ EOF_HERDR_SPACE
 chmod +x "$HOME/.local/bin/herdr-space"
 echo "  herdr-space OK → $HOME/.local/bin/herdr-space"
 
-log "Configurando Herdr (keys, settings y tema Catppuccin Frappé)"
+log "Configurando Herdr (keys, settings, tema, layout right-sidebar y mods)"
 HERDR_HOME="$HOME/.config/herdr-app"
-mkdir -p "$HERDR_HOME/themes"
+mkdir -p "$HERDR_HOME/themes" "$HERDR_HOME/layouts" "$HERDR_HOME/mods"
 
-# write_herdr_file <destino>: toma el contenido por stdin. Nunca sobreescribe un
-# archivo existente que el usuario pudo haber personalizado: solo avisa.
+# write_herdr_file <destino>: no sobrescribe personalizaciones del usuario.
 write_herdr_file() {
   local dest="$1"
   local tmp
   tmp="$(mktemp)"
   cat > "$tmp"
+  mkdir -p "$(dirname "$dest")"
   if [ -f "$dest" ]; then
     if cmp -s "$tmp" "$dest"; then
       echo "  = $dest ya estaba actualizado, se omite"
@@ -2559,6 +2559,58 @@ write_herdr_file() {
   fi
   mv "$tmp" "$dest"
   echo "  + escrito $dest"
+}
+
+# sync_herdr_managed <destino>: archivos gestionados por este script; actualiza si cambian.
+sync_herdr_managed() {
+  local dest="$1"
+  local tmp
+  tmp="$(mktemp)"
+  cat > "$tmp"
+  mkdir -p "$(dirname "$dest")"
+  if [ -f "$dest" ] && cmp -s "$tmp" "$dest"; then
+    echo "  = $dest ya estaba actualizado"
+    rm -f "$tmp"
+    return
+  fi
+  mv "$tmp" "$dest"
+  echo "  + sincronizado $dest"
+}
+
+# Copia assets de un mod shipped (svgs, etc.) hacia un clone gestionado, sin pisar main.js.
+ensure_herdr_mod_assets() {
+  local src_name="$1" dest_name="$2"
+  local src="$HERDR_HOME/mods/$src_name"
+  local dest="$HERDR_HOME/mods/$dest_name"
+  mkdir -p "$dest"
+  if [ ! -d "$src" ]; then
+    warn "Mod shipped '$src_name' no encontrado aún (abre Herdr una vez para materializarlo)"
+    return
+  fi
+  # Preferir clone oficial si el destino está vacío de assets
+  if [ ! -f "$dest/mod.json" ] && command -v herdr-app &>/dev/null && herdr-app status &>/dev/null; then
+    herdr-app do mod.clone --name "$src_name" --as "$dest_name" &>/dev/null || true
+  fi
+  if [ ! -d "$dest" ] || [ -z "$(ls -A "$dest" 2>/dev/null)" ]; then
+    cp -R "$src" "$dest"
+  else
+    # Copiar solo archivos faltantes (iconos), nunca main.js del shipped
+    local f
+    for f in "$src"/*; do
+      local base
+      base="$(basename "$f")"
+      case "$base" in
+        main.js|gpui-kit.d.ts|jsconfig.json) continue ;;
+      esac
+      if [ ! -e "$dest/$base" ]; then
+        cp -R "$f" "$dest/$base"
+      fi
+    done
+  fi
+  # Asegurar mod.json mínimo
+  if [ ! -f "$dest/mod.json" ]; then
+    printf '%s\n' '{ "place": "none" }' > "$dest/mod.json"
+  fi
 }
 
 write_herdr_file "$HERDR_HOME/themes/catppuccin-frappe.json" <<'EOF'
@@ -2607,7 +2659,7 @@ write_herdr_file "$HERDR_HOME/settings.json" <<'EOF'
 }
 EOF
 
-write_herdr_file "$HERDR_HOME/keys.json" <<'EOF'
+sync_herdr_managed "$HERDR_HOME/keys.json" <<'EOF'
 {
   "global": {
     "cmd-q": "app.quit",
@@ -2644,7 +2696,12 @@ write_herdr_file "$HERDR_HOME/keys.json" <<'EOF'
     "shift-f2": "space.rename",
     "cmd-/": "app.help",
     "cmd-shift-/": "app.help",
-    "cmd-b": "layout.toggle:sidebar",
+    "cmd-b": {
+      "command": "layout.toggle",
+      "args": {
+        "id": "sidebar"
+      }
+    },
     "cmd-=": "app.zoom_in",
     "cmd-+": "app.zoom_in",
     "cmd--": "app.zoom_out",
@@ -2669,6 +2726,7 @@ write_herdr_file "$HERDR_HOME/keys.json" <<'EOF'
     "ctrl-9": "space.select:9"
   },
   "terminal": {
+    "cmd-f": "terminal.search",
     "cmd-c": "terminal.copy",
     "cmd-v": "terminal.paste",
     "ctrl-v": "terminal.paste_image",
@@ -2678,15 +2736,459 @@ write_herdr_file "$HERDR_HOME/keys.json" <<'EOF'
     "cmd-left": "send:\u0001",
     "cmd-right": "send:\u0005",
     "cmd-backspace": "send:\u0015"
+  },
+  "layout:main-right-sidebar": {
+    "cmd-b": {
+      "command": "layout.toggle",
+      "args": {
+        "id": "sidebar"
+      }
+    }
   }
 }
 EOF
 
-# El tema se aplica en vivo solo si la app de Herdr está corriendo
+# --- Layout personalizado: sidebar a la derecha + Files/Changes como tabs ---
+sync_herdr_managed "$HERDR_HOME/layouts/main-right-sidebar.json" <<'EOF'
+{
+  "id": "root",
+  "cloned_from": {
+    "name": "main",
+    "version": "0.1.15"
+  },
+  "type": "row",
+  "children": [
+    {
+      "id": "work",
+      "type": "column",
+      "children": [
+        {
+          "id": "tabs",
+          "type": "block",
+          "content": {
+            "mod": "tabs-right-sidebar"
+          },
+          "size": {
+            "px": 42
+          },
+          "window_drag": true
+        },
+        {
+          "id": "work-body",
+          "type": "row",
+          "children": [
+            {
+              "id": "main",
+              "type": "block",
+              "content": {
+                "tab": "active",
+                "pane": {
+                  "header": {
+                    "content": {
+                      "mod": "pane"
+                    },
+                    "reveal": "always",
+                    "height": 30,
+                    "position": "top"
+                  },
+                  "background": "background",
+                  "border": {
+                    "width": 1,
+                    "color": "border"
+                  },
+                  "focus": {
+                    "width": 1,
+                    "color": "accent"
+                  },
+                  "radius": 10,
+                  "gap": 8,
+                  "lone": true
+                }
+              }
+            }
+          ],
+          "padding": 8,
+          "gap": 8
+        },
+        {
+          "id": "status",
+          "type": "block",
+          "content": {
+            "mod": "workspace-status"
+          },
+          "size": {
+            "px": 28
+          }
+        }
+      ],
+      "resizable": false
+    },
+    {
+      "id": "sidebar",
+      "type": "column",
+      "children": [
+        {
+          "id": "brand",
+          "type": "block",
+          "content": {
+            "mod": "workspace-chrome-right"
+          },
+          "size": {
+            "px": 46
+          },
+          "window_drag": true
+        },
+        {
+          "id": "sidebar-lists",
+          "type": "stack",
+          "header": {
+            "content": {
+              "mod": "sidebar-tabs"
+            },
+            "height": 34
+          },
+          "active": "spaces",
+          "children": [
+            {
+              "id": "spaces",
+              "type": "block",
+              "content": {
+                "mod": "spaces"
+              }
+            },
+            {
+              "id": "agents",
+              "type": "block",
+              "content": {
+                "mod": "agents"
+              }
+            },
+            {
+              "id": "files",
+              "type": "block",
+              "content": {
+                "mod": "files"
+              }
+            },
+            {
+              "id": "changes",
+              "type": "block",
+              "content": {
+                "mod": "changes"
+              }
+            }
+          ]
+        },
+        {
+          "id": "sidebar-footer",
+          "type": "block",
+          "content": {
+            "mod": "workspace-chrome-right",
+            "props": {
+              "footer": true
+            }
+          },
+          "size": {
+            "px": 69
+          }
+        }
+      ],
+      "size": {
+        "px": 268
+      },
+      "min": 44,
+      "max": 480,
+      "background": "chrome",
+      "resizable": false
+    }
+  ],
+  "background": "canvas",
+  "terminal_padding": [
+    14,
+    12
+  ],
+  "divider": {
+    "width": 1,
+    "color": "border"
+  },
+  "titlebar": "none",
+  "traffic_lights": [
+    12,
+    16
+  ]
+}
+EOF
+
+# --- Mods personalizados ---
+ensure_herdr_mod_assets "tabs" "tabs-right-sidebar"
+sync_herdr_managed "$HERDR_HOME/mods/tabs-right-sidebar/main.js" <<'EOF'
+import { View, div, svg, image } from "gpui-kit";
+import { h_flex, ScrollHandle } from "gpui-base";
+import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
+
+function find(node, id) {
+  if (node?.id === id) return node;
+  for (const child of node?.children ?? []) {
+    const found = find(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+export default class Tabs extends View {
+  init() {
+    this.pressed = null;
+    this.scroll = ScrollHandle.new();
+    this.panels = JSON.parse(localStorage.getItem("panels") ?? "{}");
+  }
+
+  // The side panel is remembered per space: switching shows that space's choice
+  // (closed if it never had one), and opening or closing it records it.
+  syncPanel(space, panel, body, enabled) {
+    if (!space || !panel) return;
+    const now = panel.hidden ? null : body?.active ?? null;
+    if (space.id !== this.space) {
+      const first = this.space === undefined;
+      this.space = space.id; this.pending = null;
+      if (!(first && !(space.id in this.panels))) {
+        const stored = this.panels[space.id] ?? null, want = enabled.includes(stored) ? stored : null;
+        if (want !== now) {
+          this.pending = { want, until: Date.now() + 1000 };
+          if (want) { run("layout.select", { stack: "panel-body", child: want }); run("layout.show", { id: "panel" }); }
+          else run("layout.hide", { id: "panel" });
+          return;
+        }
+      }
+    }
+    // Until the restore lands (or something else won), the old state isn't a choice.
+    if (this.pending) {
+      if (this.pending.want !== now && Date.now() < this.pending.until) return;
+      this.pending = null;
+    }
+    if (this.panels[space.id] === now) return;
+    this.panels[space.id] = now;
+    localStorage.setItem("panels", JSON.stringify(this.panels));
+  }
+
+  render() {
+    const t = theme();
+    const space = spaces().find(p => p.active);
+    const shown = space?.tabs ?? [];
+    const active = shown.findIndex(tab => tab.active);
+    const selected = shown[active]?.id;
+    if (selected !== this.selected || active !== this.selectedIndex) {
+      this.selected = selected;
+      this.selectedIndex = active;
+      if (active >= 0) this.scroll.scroll_to_item(active);
+    }
+    const stop = (_e, cx) => cx.stop_propagation();
+    const button = (id, label, action) => div().id(id).size(26).flex_none().flex().items_center().justify_center().rounded(6).text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.foreground))
+      .on_mouse_down("left", stop).on_click(action).child(label);
+    const item = (c, i) => {
+      const program = panes().find(p => p.tab === c.id && p.program?.agent)?.program ?? panes().find(p => p.tab === c.id)?.program;
+      const name = /^tb\d+$/.test(c.name) ? program?.name ?? "Terminal" : c.name;
+      return h_flex().id(`tab-${c.id}`).h(29).px(10).gap(7).rounded(7).items_center().flex_none().text_size(12.8)
+        // A rename or status dot on this or an earlier tab can push the active one out.
+        .when(i <= active, el => el.on_size_change((_size, cx) => { this.scroll.scroll_to_item(active); cx.notify(); }))
+        .border(1).border_color(c.active ? t.border : t.chrome).bg(c.active ? t.raised : t.chrome).text_color(c.active ? t.foreground : t.muted)
+        .hover(s => s.bg(t.hover))
+        .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); })
+        .on_mouse_up("left", () => {
+          const from = this.pressed; this.pressed = null;
+          if (from !== null && from !== i) run("tab.move", { id: shown[from].id, index: space.tabs.findIndex(x => x.id === c.id) + 1 });
+          else run("tab.select", { id: c.id });
+        })
+        .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "menu", kind: "popup", width: 200, props: { tab: "tab", target: { id: c.id, space: space.id } } }); })
+        .when(Boolean(program?.icon), el => el.child(program.tint ? svg(program.icon).size(14).text_color(t.muted) : image(program.icon).size(14)))
+        .child(div().max_w(170).truncate().child(c.zoomed ? `${name} Z` : name))
+        .when(c.status === "working", el => el.child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(t.working).spin(900)))
+        .when(c.status === "blocked" || c.status === "done", el => el.child(div().size(6).rounded(3).bg(t[c.status])))
+        .when(c.active, el => el.child(div().id(`close-${c.id}`).text_color(t.dim).on_mouse_down("left", stop).on_click((_e, cx) => { cx.stop_propagation(); run("tab.close", { id: c.id }); }).child(svg("mods/pane/close.svg").size(12))));
+    };
+    const root = layout(), sidebar = find(root, "sidebar"), w = window();
+    // Old saved rails and a dragged-narrow sidebar can be smaller than the window buttons.
+    // When the sidebar is on the right, it does not cover the traffic lights — tabs need full inset.
+    const kids = root?.children ?? [];
+    const sideIdx = kids.findIndex((c) => c.id === "sidebar");
+    const workIdx = kids.findIndex((c) => c.id === "work");
+    const sidebarOnLeft = sideIdx >= 0 && (workIdx < 0 || sideIdx < workIdx);
+    const leftCovered = sidebar?.hidden || !sidebarOnLeft ? 0 : (sidebar?.size?.px ?? 0);
+    const lightsPadding = w?.platform === "macos" && w.titlebar === "none" && !w.fullscreen && root?.traffic_lights
+      ? Math.max(10, (root.traffic_lights[0] + 64) / settings().zoom - leftCovered)
+      : 10;
+    const panel = find(root, "panel"), body = find(root, "panel-body");
+    const enabled = shared("workspace.panels") ?? ["files", "changes"];
+    this.syncPanel(space, panel, body, enabled);
+    return h_flex().size_full().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)
+      .on_mouse_up("left", () => { this.pressed = null; })
+      .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
+      .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(3).overflow_x_scrollbar().track_scroll(this.scroll)
+        .on_size_change((_size, cx) => { if (active >= 0) { this.scroll.scroll_to_item(active); cx.notify(); } })
+        .children(shown.map(item)))
+      .child(button("tab-new", "+", () => openOverlay({ mod: "new-menu", kind: "popup", width: 250, height: 512 })))
+      .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/tabs-right-sidebar/win-min.svg").size(16) : "−", () => run("window.minimize")))
+        .child(button("maximize", w.platform === "windows" ? svg(`mods/tabs-right-sidebar/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
+        .child(button("close-window", w.platform === "windows" ? svg("mods/tabs-right-sidebar/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));
+  }
+}
+EOF
+
+ensure_herdr_mod_assets "workspace-chrome" "workspace-chrome-right"
+sync_herdr_managed "$HERDR_HOME/mods/workspace-chrome-right/main.js" <<'EOF'
+import { View, div, image, svg } from "gpui-kit";
+import { h_flex, v_flex } from "gpui-base";
+import { theme, run, props, window, shared, setShared, updates, layout, nextCommand } from "herdr";
+
+function find(node, id) {
+  if (node?.id === id) return node;
+  for (const child of node?.children ?? []) {
+    const found = find(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+// The sidebar's rail goes by its width, not a flag: dragging its edge narrows it too.
+const narrow = () => (find(layout(), "sidebar")?.size?.px ?? Infinity) < 160;
+
+// To the rail (on macOS wide enough for the traffic lights), or back to the width it had.
+function toggleSidebar() {
+  const width = find(layout(), "sidebar")?.size?.px;
+  if (!narrow()) setShared("sidebar.width", width);
+  // Mods edited before the rail went by width still read the flag.
+  setShared("sidebar.collapsed", !narrow());
+  run("layout.resize", { id: "sidebar", px: narrow() ? (shared("sidebar.width") ?? 268) : window()?.platform === "macos" ? 76 : 44 });
+}
+
+export default class WorkspaceChrome extends View {
+  init(p, cx) {
+    // Only the brand copy listens: footer is a second copy and would double-toggle.
+    if (p?.footer) return;
+    cx.spawn(async (cx) => {
+      for (;;) {
+        const command = await nextCommand();
+        if (command === "toggle") {
+          run("layout.toggle", { id: "sidebar" });
+          cx.notify();
+        }
+      }
+    });
+  }
+
+  button(id, label, action) {
+    const t = theme();
+    return div().id(id).size(26).flex_none().flex().items_center().justify_center().rounded(6).text_color(t.muted).hover(s => s.bg(t.hover).text_color(t.foreground))
+      .on_mouse_down("left", (_e, cx) => cx.stop_propagation()).on_click(action).child(label);
+  }
+  render() {
+    const t = theme();
+    const collapsed = narrow();
+    if (props()?.footer) {
+      const row = (id, icon, label, dim, action) => h_flex().id(id).h(28).px(8).gap(9).items_center().rounded(8)
+        .when(collapsed, el => el.relative().w(32).px(0).justify_center().tooltip(label))
+        .text_color(dim ? t.dim : t.muted).hover(s => s.bg(t.hover).text_color(t.foreground)).cursor_pointer()
+        .on_click(action).child(svg(`mods/workspace-chrome-right/${icon}.svg`).size(14))
+        .when(!collapsed, el => el.child(label));
+      const ready = div().size(6).rounded_full().bg(t.accent);
+      return v_flex().size_full().bg(t.chrome).border_t(1).border_color(t.border).px(8).pt(4).pb(8).text_size(13)
+        .when(collapsed, el => el.px(0).items_center())
+        .child(row("settings", "settings", "Settings", false, () => run("app.settings"))
+          .when(Boolean(updates().app.ready), el => el.child(collapsed ? ready.absolute().top(5).right(6) : ready)))
+        .child(row("machine", "plus", "Add machine", true, () => run("mod.open", { name: "machine-add" })));
+    }
+    const root = layout();
+    const kids = root?.children ?? [];
+    const sideIdx = kids.findIndex((c) => c.id === "sidebar");
+    const workIdx = kids.findIndex((c) => c.id === "work");
+    const sidebarOnLeft = sideIdx >= 0 && (workIdx < 0 || sideIdx < workIdx);
+    return h_flex().size_full().bg(t.chrome).pl(collapsed ? 6 : 14).pr(10).gap(4).items_center().text_size(13.5)
+      .when(window()?.platform === "macos" && !window()?.fullscreen && !collapsed && sidebarOnLeft, el => el.pl(76))
+      .when(!collapsed, el => el.child(h_flex().flex_1().gap(8).items_center().child(image("frame/welcome/herdr.png").size(20).rounded(5)).child(div().font_semibold().text_color(t.foreground).child("Herdr"))))
+      .when(!collapsed, el => el.child(this.button("search", svg("mods/workspace-chrome-right/search.svg").size(15), () => run("mod.open", { name: "picker" }))))
+      // On the macOS rail the traffic lights fill the row; the agents list's » unfolds it.
+      .when(!(collapsed && window()?.platform === "macos"), el => el.child(this.button("sidebar-toggle", svg("mods/workspace-chrome-right/sidebar.svg").size(15), () => run("layout.toggle", { id: "sidebar" }))));
+  }
+}
+EOF
+
+mkdir -p "$HERDR_HOME/mods/sidebar-tabs"
+sync_herdr_managed "$HERDR_HOME/mods/sidebar-tabs/mod.json" <<'EOF'
+{ "place": "none" }
+EOF
+sync_herdr_managed "$HERDR_HOME/mods/sidebar-tabs/main.js" <<'EOF'
+import { View, div, svg } from "gpui-kit";
+import { h_flex } from "gpui-base";
+import { layout, run, theme } from "herdr";
+
+function find(node, id) {
+  if (node?.id === id) return node;
+  for (const child of node?.children ?? []) {
+    const found = find(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+const TABS = [
+  { id: "spaces", label: "Spaces", icon: "mods/workspace-chrome-right/sidebar.svg" },
+  { id: "agents", label: "Agents", icon: "mods/workspace-chrome-right/layers.svg" },
+  { id: "files", label: "Files", icon: "mods/files/file.svg" },
+  { id: "changes", label: "Changes", icon: "mods/changes/changes.svg" },
+];
+
+export default class SidebarTabs extends View {
+  render() {
+    const t = theme();
+    const stack = find(layout(), "sidebar-lists");
+    const active = stack?.active ?? "spaces";
+    const available = new Set((stack?.children ?? []).map((c) => c.id));
+    const tabs = TABS.filter((tab) => available.has(tab.id));
+
+    return h_flex()
+      .size_full()
+      .min_w(0)
+      .px(8)
+      .gap(2)
+      .items_center()
+      .bg(t.chrome)
+      .border_b(1)
+      .border_color(t.border)
+      .children(
+        tabs.map((tab) => {
+          const on = active === tab.id;
+          return h_flex()
+            .id(`sidebar-tab-${tab.id}`)
+            .h(26)
+            .px(8)
+            .gap(5)
+            .flex_none()
+            .items_center()
+            .rounded(6)
+            .text_size(12)
+            .bg(on ? t.selected : t.chrome)
+            .text_color(on ? t.foreground : t.muted)
+            .hover((s) => s.bg(t.hover))
+            .on_click(() => run("layout.select", { stack: "sidebar-lists", child: tab.id }))
+            .child(svg(tab.icon).size(14))
+            .child(div().child(tab.label));
+        }),
+      );
+  }
+}
+EOF
+
+# Tema + layout activos si Herdr está corriendo
 if command -v herdr-app &>/dev/null; then
-  herdr-app do app.theme '{"name":"catppuccin-frappe"}' &>/dev/null \
-    && echo "  + tema catppuccin-frappe aplicado" \
-    || warn "No se pudo aplicar el tema (¿Herdr está abierto?). Elígelo en Ajustes > Look."
+  if herdr-app status &>/dev/null; then
+    herdr-app do app.theme '{"name":"catppuccin-frappe"}' &>/dev/null \
+      && echo "  + tema catppuccin-frappe aplicado" \
+      || warn "No se pudo aplicar el tema catppuccin-frappe"
+    herdr-app do layout.switch --name main-right-sidebar &>/dev/null \
+      && echo "  + layout main-right-sidebar activo" \
+      || warn "No se pudo activar main-right-sidebar (¿archivo inválido?)"
+  else
+    warn "Herdr no está abierto: tema/layout se aplicarán al abrirlo (elige layout main-right-sidebar o cmd-shift-l)."
+  fi
 fi
 
 fi
@@ -3417,7 +3919,7 @@ echo "  - lazymongo + mongosh (MongoDB) + conexiones nombradas ('mgo <nombre>')"
 echo "  - Neovim + LazyVim en $NVIM_CONFIG (+ extras typescript/vue/astro/tailwind/json/prettier/eslint)"
 echo "  - Dashboard de bienvenida personalizado con tu nombre"
 echo "  - tmux + TPM (tmux-sensible, tmux-resurrect, tmux-continuum)"
-echo "  - Claude Code + Cursor CLI (agent) + Graphify + Herdr (app + core/hc)"
+echo "  - Claude Code + Cursor CLI (agent) + Graphify + Herdr (app + core/hc + layout main-right-sidebar)"
 echo ""
 echo "Siguiente paso: abre una terminal nueva o corre 'source ~/.zshrc' para aplicar los cambios de shell."
 echo "Luego abre 'nvim' una vez para que Mason instale los LSPs de los extras habilitados."
